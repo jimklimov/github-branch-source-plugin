@@ -1,20 +1,8 @@
 package org.jenkinsci.plugins.github_branch_source;
 // mvn -Dtest=GithubSCMSourcePRedBranchesIndexingTest -DtestLogging.showStandardStreams=true test || echo FAILED
 
-import jenkins.scm.api.SCMHead;
-import jenkins.scm.api.SCMHeadObserver;
-import jenkins.scm.api.SCMHeadOrigin;
-import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.Rule;
-import org.jvnet.hudson.test.JenkinsRule;
-import org.kohsuke.github.GHPullRequest;
-import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GHBranch;
-import org.kohsuke.github.GitHub;
-import org.mockito.Mockito;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.Assert.*;
 
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -23,16 +11,23 @@ import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.Assert.*;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.SCMHeadObserver;
+import jenkins.scm.api.SCMHeadOrigin;
+import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.kohsuke.github.GHBranch;
+import org.kohsuke.github.GHPullRequest;
+import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GitHub;
+import org.mockito.Mockito;
 
 public class GithubSCMSourcePRedBranchesIndexingTest {
     private static final Logger log = Logger.getLogger(GithubSCMSourcePRedBranchesIndexingTest.class.getName());
@@ -50,9 +45,14 @@ public class GithubSCMSourcePRedBranchesIndexingTest {
     // TODO: Extend to testing also with patterned branch-name filters
 
     public static PullRequestSCMHead prMerge = new PullRequestSCMHead(
-        "", "cloudbeers", "yolo", "branchWithPR",
-        1, (BranchSCMHead) branchMaster,
-        SCMHeadOrigin.DEFAULT, ChangeRequestCheckoutStrategy.MERGE);
+            "",
+            "cloudbeers",
+            "yolo",
+            "branchWithPR",
+            1,
+            (BranchSCMHead) branchMaster,
+            SCMHeadOrigin.DEFAULT,
+            ChangeRequestCheckoutStrategy.MERGE);
 
     /**
      * All tests in this class only use Jenkins for the extensions
@@ -63,30 +63,27 @@ public class GithubSCMSourcePRedBranchesIndexingTest {
     public static WireMockRuleFactory factory = new WireMockRuleFactory();
 
     @Rule
-    public WireMockRule githubRaw = factory.getRule(WireMockConfiguration.options()
-        .dynamicPort()
-        .usingFilesUnderClasspath("raw")
-    );
+    public WireMockRule githubRaw =
+            factory.getRule(WireMockConfiguration.options().dynamicPort().usingFilesUnderClasspath("raw"));
+
     @Rule
     public WireMockRule githubApi = factory.getRule(WireMockConfiguration.options()
-        .dynamicPort()
-        .usingFilesUnderClasspath("api")
-        .extensions(
-            new ResponseTransformer() {
+            .dynamicPort()
+            .usingFilesUnderClasspath("api")
+            .extensions(new ResponseTransformer() {
                 @Override
-                public Response transform(Request request, Response response, FileSource files,
-                                          Parameters parameters) {
+                public Response transform(Request request, Response response, FileSource files, Parameters parameters) {
                     if ("application/json"
-                        .equals(response.getHeaders().getContentTypeHeader().mimeTypePart())) {
+                            .equals(response.getHeaders().getContentTypeHeader().mimeTypePart())) {
                         return Response.Builder.like(response)
-                            .but()
-                            .body(response.getBodyAsString()
-                                .replace("https://api.github.com/",
-                                    "http://localhost:" + githubApi.port() + "/")
-                                .replace("https://raw.githubusercontent.com/",
-                                    "http://localhost:" + githubRaw.port() + "/")
-                            )
-                            .build();
+                                .but()
+                                .body(response.getBodyAsString()
+                                        .replace(
+                                                "https://api.github.com/", "http://localhost:" + githubApi.port() + "/")
+                                        .replace(
+                                                "https://raw.githubusercontent.com/",
+                                                "http://localhost:" + githubRaw.port() + "/"))
+                                .build();
                     }
                     return response;
                 }
@@ -95,90 +92,81 @@ public class GithubSCMSourcePRedBranchesIndexingTest {
                 public String getName() {
                     return "url-rewrite";
                 }
+            }));
 
-            })
-    );
     private GitHubSCMSource source;
     GitHub github;
     GHRepository repo;
 
     @Before
     public void prepareMockGitHub() throws Exception {
-/*
-        new File("src/test/resources/api/mappings").mkdirs();
-        new File("src/test/resources/api/__files").mkdirs();
-        new File("src/test/resources/raw/mappings").mkdirs();
-        new File("src/test/resources/raw/__files").mkdirs();
-        githubApi.enableRecordMappings(new SingleRootFileSource("src/test/resources/api/mappings"),
-                new SingleRootFileSource("src/test/resources/api/__files"));
-        githubRaw.enableRecordMappings(new SingleRootFileSource("src/test/resources/raw/mappings"),
-                new SingleRootFileSource("src/test/resources/raw/__files"));
-*/
+        /*
+                new File("src/test/resources/api/mappings").mkdirs();
+                new File("src/test/resources/api/__files").mkdirs();
+                new File("src/test/resources/raw/mappings").mkdirs();
+                new File("src/test/resources/raw/__files").mkdirs();
+                githubApi.enableRecordMappings(new SingleRootFileSource("src/test/resources/api/mappings"),
+                        new SingleRootFileSource("src/test/resources/api/__files"));
+                githubRaw.enableRecordMappings(new SingleRootFileSource("src/test/resources/raw/mappings"),
+                        new SingleRootFileSource("src/test/resources/raw/__files"));
+        */
 
         // PRs
-        githubApi.stubFor(
-            get(urlEqualTo("/repos/cloudbeers/yolo/pulls"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/repos/cloudbeers/yolo/pulls"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../PRs/_files/body-yolo-pulls-open-pr-from-branch-listing.json")));
 
-        githubApi.stubFor(
-            get(urlEqualTo("/repos/cloudbeers/yolo/pulls/226"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/repos/cloudbeers/yolo/pulls/226"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../PRs/_files/body-yolo-pulls-open-pr-from-branch-226.json")));
 
         // Branches
-        githubApi.stubFor(
-            get(urlEqualTo("/branches/cloudbeers/yolo"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/branches/cloudbeers/yolo"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../branches/_files/body-yolo-branches-with-pr-from-branch-listing.json")));
 
-        githubApi.stubFor(
-            get(urlEqualTo("/branches/cloudbeers/yolo/master"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/branches/cloudbeers/yolo/master"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../branches/_files/body-yolo-branches-with-pr-from-branch-master.json")));
 
-        githubApi.stubFor(
-            get(urlEqualTo("/branches/cloudbeers/yolo/branchWithPR"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/branches/cloudbeers/yolo/branchWithPR"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../branches/_files/body-yolo-branches-with-pr-from-branch-branchWithPR.json")));
 
-        githubApi.stubFor(
-            get(urlEqualTo("/branches/cloudbeers/yolo/branchWithoutPR"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/branches/cloudbeers/yolo/branchWithoutPR"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
-                        .withBodyFile("../branches/_files/body-yolo-branches-with-pr-from-branch-branchWithoutPR.json")));
+                        .withBodyFile(
+                                "../branches/_files/body-yolo-branches-with-pr-from-branch-branchWithoutPR.json")));
 
-        githubApi.stubFor(
-            get(urlEqualTo("/branches/cloudbeers/yolo/branchRelease"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/branches/cloudbeers/yolo/branchRelease"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../branches/_files/body-yolo-branches-with-pr-from-branch-branchRelease.json")));
 
-        githubApi.stubFor(
-            get(urlEqualTo("/branches/cloudbeers/yolo/branchHotfix"))
-                .willReturn(
-                    aResponse()
+        githubApi.stubFor(get(urlEqualTo("/branches/cloudbeers/yolo/branchHotfix"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../branches/_files/body-yolo-branches-with-pr-from-branch-branchHotfix.json")));
 
         githubApi.stubFor(
-            get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://api.github.com/")));
-        githubRaw.stubFor(get(urlMatching(".*")).atPriority(10)
-            .willReturn(aResponse().proxiedFrom("https://raw.githubusercontent.com/")));
+                get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://api.github.com/")));
+        githubRaw.stubFor(get(urlMatching(".*"))
+                .atPriority(10)
+                .willReturn(aResponse().proxiedFrom("https://raw.githubusercontent.com/")));
 
-        source = new GitHubSCMSource(null, "http://localhost:" + githubApi.port(), GitHubSCMSource.DescriptorImpl.SAME, null, "cloudbeers", "yolo");
+        source = new GitHubSCMSource(
+                null,
+                "http://localhost:" + githubApi.port(),
+                GitHubSCMSource.DescriptorImpl.SAME,
+                null,
+                "cloudbeers",
+                "yolo");
         github = Connector.connect("http://localhost:" + githubApi.port(), null);
         repo = github.getRepository("cloudbeers/yolo");
 
@@ -189,24 +177,25 @@ public class GithubSCMSourcePRedBranchesIndexingTest {
     @Test
     public void testIndexing__see__allOnePR() throws IOException {
         // Situation: Hitting the Github API for a PR listing and getting the open PR #216
-        //	try {prepareMockGitHub();} catch (Throwable t) { throw new IOException("FAILED to prepareMockGitHub(): " + t.toString()); }
-        source.setTraits(Arrays.asList(new BranchDiscoveryTrait(true, true),
-            new ForkPullRequestDiscoveryTrait(EnumSet.of(ChangeRequestCheckoutStrategy.MERGE),
-                new ForkPullRequestDiscoveryTrait.TrustContributors())));
-        githubApi.stubFor(
-            get(urlEqualTo("/branches/cloudbeers/yolo"))
-                .willReturn(
-                    aResponse()
+        //	try {prepareMockGitHub();} catch (Throwable t) { throw new IOException("FAILED to prepareMockGitHub(): " +
+        // t.toString()); }
+        source.setTraits(Arrays.asList(
+                new BranchDiscoveryTrait(true, true),
+                new ForkPullRequestDiscoveryTrait(
+                        EnumSet.of(ChangeRequestCheckoutStrategy.MERGE),
+                        new ForkPullRequestDiscoveryTrait.TrustContributors())));
+        githubApi.stubFor(get(urlEqualTo("/branches/cloudbeers/yolo"))
+                .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
                         .withBodyFile("../branches/_files/body-yolo-branches-with-pr-from-branch-listing.json")));
-
 
         SCMHeadObserver mockSCMHeadObserver = Mockito.mock(SCMHeadObserver.class);
         GitHubSCMSourceContext context = new GitHubSCMSourceContext(null, mockSCMHeadObserver);
         context.wantPRs();
-        GitHubSCMSourceRequest request = context.newRequest(new GitHubSCMSource("cloudbeers", "yolo", null, false), null);
-        Iterator<GHPullRequest> pullRequest = new GitHubSCMSource("cloudbeers", "yolo", null, false)
-            .new LazyPullRequests(request, repo).iterator();
+        GitHubSCMSourceRequest request =
+                context.newRequest(new GitHubSCMSource("cloudbeers", "yolo", null, false), null);
+        Iterator<GHPullRequest> pullRequest =
+                new GitHubSCMSource("cloudbeers", "yolo", null, false).new LazyPullRequests(request, repo).iterator();
 
         System.err.println("=== Looking at PR iterator " + pullRequest);
 
@@ -220,10 +209,13 @@ public class GithubSCMSourcePRedBranchesIndexingTest {
     @Test
     public void testIndexing__want__allBranches() throws IOException {
         // Situation: Hitting the Github API for a branch listing and getting all those present in repo
-        //	try {prepareMockGitHub();} catch (Throwable t) { throw new IOException("FAILED to prepareMockGitHub(): " + t.toString()); }
-        source.setTraits(Arrays.asList(new BranchDiscoveryTrait(true, true),
-            new ForkPullRequestDiscoveryTrait(EnumSet.of(ChangeRequestCheckoutStrategy.MERGE),
-                new ForkPullRequestDiscoveryTrait.TrustContributors())));
+        //	try {prepareMockGitHub();} catch (Throwable t) { throw new IOException("FAILED to prepareMockGitHub(): " +
+        // t.toString()); }
+        source.setTraits(Arrays.asList(
+                new BranchDiscoveryTrait(true, true),
+                new ForkPullRequestDiscoveryTrait(
+                        EnumSet.of(ChangeRequestCheckoutStrategy.MERGE),
+                        new ForkPullRequestDiscoveryTrait.TrustContributors())));
 
         String[] expectedBranchNamesArr = {
             branchMaster.getName(),
@@ -238,15 +230,16 @@ public class GithubSCMSourcePRedBranchesIndexingTest {
         SCMHeadObserver mockSCMHeadObserver = Mockito.mock(SCMHeadObserver.class);
         GitHubSCMSourceContext context = new GitHubSCMSourceContext(null, mockSCMHeadObserver);
         context.wantBranches(true);
-        GitHubSCMSourceRequest request = context.newRequest(new GitHubSCMSource("cloudbeers", "yolo", null, false), null);
+        GitHubSCMSourceRequest request =
+                context.newRequest(new GitHubSCMSource("cloudbeers", "yolo", null, false), null);
 
         // Expected: We see all branches defined in mock and none others
         long count = 0;
         for (GHBranch branch : new GitHubSCMSource.LazyBranches(request, repo)) {
-        // for (GHBranch branch : request.getBranches()) {
+            // for (GHBranch branch : request.getBranches()) {
             System.err.println("=== Looking at branch: " + branch.toString() + " (" + branch.getName() + ")");
             // Is the name we saw among those expected?
-			// assertTrue(0 < Arrays.binarySearch(expectedBranchNames, branch.getName()));
+            // assertTrue(0 < Arrays.binarySearch(expectedBranchNames, branch.getName()));
             assertTrue(expectedBranchNames.contains(branch.getName()));
             count++;
         }
