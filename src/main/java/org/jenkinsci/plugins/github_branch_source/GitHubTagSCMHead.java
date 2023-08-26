@@ -9,19 +9,16 @@ public class GitHubTagSCMHead extends GitTagSCMHead implements TagSCMHead {
     /**
      * Constructor.
      *
-     * @param name      the name.
+     * @param name the name.
      * @param timestamp the tag timestamp;
      */
     public GitHubTagSCMHead(@NonNull String name, long timestamp) {
         super(name, timestamp);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getPronoun() {
         return Messages.GitHubTagSCMHead_Pronoun();
     }
-
 }

@@ -23,8 +23,14 @@
  */
 package org.jenkinsci.plugins.github_branch_source;
 
+import static com.google.common.collect.Sets.immutableEnumSet;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.WARNING;
+import static org.kohsuke.github.GHEvent.REPOSITORY;
+
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.model.Item;
 import java.io.IOException;
@@ -36,7 +42,6 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 import jenkins.scm.api.SCMNavigator;
 import jenkins.scm.api.SCMNavigatorOwner;
 import jenkins.scm.api.SCMSource;
@@ -47,20 +52,12 @@ import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GitHub;
 
-import static com.google.common.collect.Sets.immutableEnumSet;
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.WARNING;
-import static org.kohsuke.github.GHEvent.REPOSITORY;
-
-/**
- * This subscriber manages {@link org.kohsuke.github.GHEvent} REPOSITORY.
- */
+/** This subscriber manages {@link org.kohsuke.github.GHEvent} REPOSITORY. */
 @Extension
 public class GitHubRepositoryEventSubscriber extends GHEventsSubscriber {
 
     private static final Logger LOGGER = Logger.getLogger(GitHubRepositoryEventSubscriber.class.getName());
     private static final Pattern REPOSITORY_NAME_PATTERN = Pattern.compile("https?://([^/]+)/([^/]+)/([^/]+)");
-
 
     @Override
     protected boolean isApplicable(@Nullable Item item) {
@@ -74,9 +71,7 @@ public class GitHubRepositoryEventSubscriber extends GHEventsSubscriber {
         return false;
     }
 
-    /**
-     * @return set with only REPOSITORY event
-     */
+    /** @return set with only REPOSITORY event */
     @Override
     protected Set<GHEvent> events() {
         return immutableEnumSet(REPOSITORY);
@@ -89,9 +84,9 @@ public class GitHubRepositoryEventSubscriber extends GHEventsSubscriber {
                     .parseEventPayload(new StringReader(event.getPayload()), GHEventPayload.Repository.class);
             String action = p.getAction();
             String repoUrl = p.getRepository().getHtmlUrl().toExternalForm();
-            LOGGER.log(Level.FINE, "Received {0} for {1} from {2}",
-                    new Object[]{event.getGHEvent(), repoUrl, event.getOrigin()}
-            );
+            LOGGER.log(Level.FINE, "Received {0} for {1} from {2}", new Object[] {
+                event.getGHEvent(), repoUrl, event.getOrigin()
+            });
             boolean fork = p.getRepository().isFork();
             Matcher matcher = REPOSITORY_NAME_PATTERN.matcher(repoUrl);
             if (matcher.matches()) {
@@ -101,12 +96,15 @@ public class GitHubRepositoryEventSubscriber extends GHEventsSubscriber {
                     return;
                 }
                 if (!"created".equals(action)) {
-                    LOGGER.log(FINE, "Repository {0} was {1} not created, will be ignored",
-                            new Object[]{repo.getRepositoryName(), action});
+                    LOGGER.log(FINE, "Repository {0} was {1} not created, will be ignored", new Object[] {
+                        repo.getRepositoryName(), action
+                    });
                     return;
                 }
                 if (!fork) {
-                    LOGGER.log(FINE, "Repository {0} was created but it is empty, will be ignored",
+                    LOGGER.log(
+                            FINE,
+                            "Repository {0} was created but it is empty, will be ignored",
                             repo.getRepositoryName());
                     return;
                 }
@@ -118,7 +116,7 @@ public class GitHubRepositoryEventSubscriber extends GHEventsSubscriber {
             }
         } catch (IOException e) {
             LogRecord lr = new LogRecord(Level.WARNING, "Could not parse {0} event from {1} with payload: {2}");
-            lr.setParameters(new Object[]{event.getGHEvent(), event.getOrigin(), event.getPayload()});
+            lr.setParameters(new Object[] {event.getGHEvent(), event.getOrigin(), event.getPayload()});
             lr.setThrown(e);
             LOGGER.log(lr);
         }
@@ -129,8 +127,8 @@ public class GitHubRepositoryEventSubscriber extends GHEventsSubscriber {
         private final String repoOwner;
         private final String repository;
 
-        public NewSCMSourceEvent(long timestamp, String origin, GHEventPayload.Repository event,
-                                 GitHubRepositoryName repo) {
+        public NewSCMSourceEvent(
+                long timestamp, String origin, GHEventPayload.Repository event, GitHubRepositoryName repo) {
             super(Type.CREATED, timestamp, event, origin);
             this.repoHost = repo.getHost();
             this.repoOwner = event.getRepository().getOwnerName();

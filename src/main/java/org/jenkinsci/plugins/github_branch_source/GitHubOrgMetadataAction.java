@@ -37,7 +37,8 @@ import org.kohsuke.github.GHUser;
 import org.kohsuke.stapler.Stapler;
 
 /**
- * Invisible {@link AvatarMetadataAction} property that retains information about GitHub organization.
+ * Invisible {@link AvatarMetadataAction} property that retains information about GitHub
+ * organization.
  *
  * @author Kohsuke Kawaguchi
  */
@@ -58,8 +59,7 @@ public class GitHubOrgMetadataAction extends AvatarMetadataAction {
     }
 
     private Object readResolve() throws ObjectStreamException {
-        if (avatar != null && StringUtils.isBlank(avatar))
-            return new GitHubOrgMetadataAction(this);
+        if (avatar != null && StringUtils.isBlank(avatar)) return new GitHubOrgMetadataAction(this);
         return this;
     }
 
@@ -68,9 +68,7 @@ public class GitHubOrgMetadataAction extends AvatarMetadataAction {
         return Util.fixEmpty(avatar);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getAvatarImageOf(String size) {
         if (avatar == null) {
@@ -78,8 +76,10 @@ public class GitHubOrgMetadataAction extends AvatarMetadataAction {
             String image = avatarIconClassNameImageOf(getAvatarIconClassName(), size);
             return image != null
                     ? image
-                    : (Stapler.getCurrentRequest().getContextPath() + Hudson.RESOURCE_PATH
-                            + "/plugin/github-branch-source/images/" + size + "/github-logo.png");
+                    : (Stapler.getCurrentRequest().getContextPath()
+                            + Hudson.RESOURCE_PATH
+                            + "/plugin/github-branch-source/images/"
+                            + "/github-logo.svg");
         } else {
             String[] xy = size.split("x");
             if (xy.length == 0) return avatar;
@@ -88,25 +88,19 @@ public class GitHubOrgMetadataAction extends AvatarMetadataAction {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getAvatarIconClassName() {
         return avatar == null ? "icon-github-logo" : null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getAvatarDescription() {
         return Messages.GitHubOrgMetadataAction_IconDescription();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -121,22 +115,15 @@ public class GitHubOrgMetadataAction extends AvatarMetadataAction {
         return Objects.equals(avatar, that.avatar);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return (avatar != null ? avatar.hashCode() : 0);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String toString() {
-        return "GitHubOrgMetadataAction{" +
-                ", avatar='" + avatar + '\'' +
-                "}";
+        return "GitHubOrgMetadataAction{" + ", avatar='" + avatar + '\'' + "}";
     }
-
 }

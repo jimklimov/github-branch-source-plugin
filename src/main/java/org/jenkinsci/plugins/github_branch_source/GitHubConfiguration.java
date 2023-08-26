@@ -42,7 +42,8 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
-@Extension public class GitHubConfiguration extends GlobalConfiguration {
+@Extension
+public class GitHubConfiguration extends GlobalConfiguration {
 
     public static GitHubConfiguration get() {
         return GlobalConfiguration.all().get(GitHubConfiguration.class);
@@ -56,7 +57,8 @@ import org.kohsuke.stapler.StaplerRequest;
         load();
     }
 
-    @Override public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
+    @Override
+    public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
         req.bindJSON(this, json);
         return true;
     }
@@ -88,7 +90,7 @@ import org.kohsuke.stapler.StaplerRequest;
     @CheckForNull
     public static String normalizeApiUri(@CheckForNull String apiUri) {
         if (apiUri == null) {
-            return  null;
+            return null;
         }
         try {
             URI uri = new URI(apiUri).normalize();
@@ -106,14 +108,8 @@ import org.kohsuke.stapler.StaplerRequest;
                     port = -1;
                 }
                 apiUri = new URI(
-                        scheme,
-                        uri.getUserInfo(),
-                        host,
-                        port,
-                        uri.getPath(),
-                        uri.getQuery(),
-                        uri.getFragment()
-                ).toASCIIString();
+                                scheme, uri.getUserInfo(), host, port, uri.getPath(), uri.getQuery(), uri.getFragment())
+                        .toASCIIString();
             }
         } catch (URISyntaxException e) {
             // ignore, this was a best effort tidy-up

@@ -1,5 +1,11 @@
 package org.jenkinsci.plugins.github_branch_source;
 
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
+
 import hudson.model.Item;
 import hudson.model.User;
 import hudson.security.ACL;
@@ -14,46 +20,42 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.MockAuthorizationStrategy;
 import org.jvnet.hudson.test.MockFolder;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
-
 public class SSHCheckoutTraitTest {
     @ClassRule
     public static JenkinsRule j = new JenkinsRule();
 
     @Test
     public void given__legacyConfig__when__creatingTrait__then__convertedToModern() throws Exception {
-        assertThat(new SSHCheckoutTrait(GitHubSCMSource.DescriptorImpl.ANONYMOUS).getCredentialsId(),
-                is(nullValue()));
+        assertThat(new SSHCheckoutTrait(GitHubSCMSource.DescriptorImpl.ANONYMOUS).getCredentialsId(), is(nullValue()));
     }
 
     @Test
-    public void given__sshCheckoutWithCredentials__when__decorating__then__credentialsApplied_with_repositoryUrl() throws Exception {
+    public void given__sshCheckoutWithCredentials__when__decorating__then__credentialsApplied_with_repositoryUrl()
+            throws Exception {
         SSHCheckoutTrait instance = new SSHCheckoutTrait("keyId");
         GitHubSCMSource source = new GitHubSCMSource("", "", "https://github.com/example/does-not-exist", true);
         source.setCredentialsId("scanId");
-        GitHubSCMBuilder probe = new GitHubSCMBuilder( source, new BranchSCMHead("master"), null);
+        GitHubSCMBuilder probe = new GitHubSCMBuilder(source, new BranchSCMHead("master"), null);
         assumeThat(probe.credentialsId(), is("scanId"));
         instance.decorateBuilder(probe);
         assertThat(probe.credentialsId(), is("keyId"));
     }
+
     @Test
     public void given__sshCheckoutWithCredentials__when__decorating__then__credentialsApplied() throws Exception {
         SSHCheckoutTrait instance = new SSHCheckoutTrait("keyId");
         GitHubSCMSource source = new GitHubSCMSource("example", "does-not-exist");
         source.setApiUri("https://github.test");
         source.setCredentialsId("scanId");
-        GitHubSCMBuilder probe = new GitHubSCMBuilder( source, new BranchSCMHead("master"), null);
+        GitHubSCMBuilder probe = new GitHubSCMBuilder(source, new BranchSCMHead("master"), null);
         assumeThat(probe.credentialsId(), is("scanId"));
         instance.decorateBuilder(probe);
         assertThat(probe.credentialsId(), is("keyId"));
     }
 
     @Test
-    public void given__sshCheckoutWithAgentKey__when__decorating__then__useAgentKeyApplied_with_repositoryUrl() throws Exception {
+    public void given__sshCheckoutWithAgentKey__when__decorating__then__useAgentKeyApplied_with_repositoryUrl()
+            throws Exception {
         SSHCheckoutTrait instance = new SSHCheckoutTrait(null);
         GitHubSCMSource source = new GitHubSCMSource("", "", "https://github.com/example/does-not-exist", true);
         source.setCredentialsId("scanId");
@@ -62,6 +64,7 @@ public class SSHCheckoutTraitTest {
         instance.decorateBuilder(probe);
         assertThat(probe.credentialsId(), is(nullValue()));
     }
+
     @Test
     public void given__sshCheckoutWithAgentKey__when__decorating__then__useAgentKeyApplied() throws Exception {
         SSHCheckoutTrait instance = new SSHCheckoutTrait(null);
@@ -90,7 +93,9 @@ public class SSHCheckoutTraitTest {
             try (ACLContext ctx = ACL.as(User.getById("admin", true).impersonate())) {
                 ListBoxModel rsp = d.doFillCredentialsIdItems(dummy, "", "does-not-exist");
                 assertThat("Expecting only the provided value so that form config unchanged", rsp, hasSize(1));
-                assertThat("Expecting only the provided value so that form config unchanged", rsp.get(0).value,
+                assertThat(
+                        "Expecting only the provided value so that form config unchanged",
+                        rsp.get(0).value,
                         is("does-not-exist"));
                 rsp = d.doFillCredentialsIdItems(null, "", "does-not-exist");
                 assertThat("Expecting just the empty entry", rsp, hasSize(1));
@@ -102,7 +107,9 @@ public class SSHCheckoutTraitTest {
                 assertThat("Expecting just the empty entry", rsp.get(0).value, is(""));
                 rsp = d.doFillCredentialsIdItems(null, "", "does-not-exist");
                 assertThat("Expecting only the provided value so that form config unchanged", rsp, hasSize(1));
-                assertThat("Expecting only the provided value so that form config unchanged", rsp.get(0).value,
+                assertThat(
+                        "Expecting only the provided value so that form config unchanged",
+                        rsp.get(0).value,
                         is("does-not-exist"));
             }
             try (ACLContext ctx = ACL.as(User.getById("jim", true).impersonate())) {
@@ -113,7 +120,9 @@ public class SSHCheckoutTraitTest {
             try (ACLContext ctx = ACL.as(User.getById("sue", true).impersonate())) {
                 ListBoxModel rsp = d.doFillCredentialsIdItems(dummy, "", "does-not-exist");
                 assertThat("Expecting only the provided value so that form config unchanged", rsp, hasSize(1));
-                assertThat("Expecting only the provided value so that form config unchanged", rsp.get(0).value,
+                assertThat(
+                        "Expecting only the provided value so that form config unchanged",
+                        rsp.get(0).value,
                         is("does-not-exist"));
             }
         } finally {

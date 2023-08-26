@@ -67,5 +67,4 @@ public class RateLimitExceededException extends IOException {
     public long getLimit() {
         return limit;
     }
-
 }

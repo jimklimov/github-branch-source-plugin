@@ -52,13 +52,23 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @since 2.2.0
  */
 public class BranchDiscoveryTrait extends SCMSourceTrait {
+    /** None strategy. */
+    public static final int NONE = 0;
+    /** Exclude branches that are also filed as PRs. */
+    public static final int EXCLUDE_PRS = 1;
+    /** Only branches that are also filed as PRs. */
+    public static final int ONLY_PRS = 2;
+    /** All branches. */
+    public static final int ALL_BRANCHES = 3;
+
     /**
      * The strategy encoded as a bit-field.
+     *
      * <dl>
-     *     <dt>Bit 0</dt>
-     *     <dd>Build branches that are not filed as a PR</dd>
-     *     <dt>Bit 1</dt>
-     *     <dd>Build branches that are filed as a PR</dd>
+     *   <dt>Bit 0
+     *   <dd>Build branches that are not filed as a PR
+     *   <dt>Bit 1
+     *   <dd>Build branches that are filed as a PR
      * </dl>
      */
     private final int strategyId;
@@ -76,11 +86,11 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
     /**
      * Constructor for legacy code.
      *
-     * @param buildBranch       build branches that are not filed as a PR.
+     * @param buildBranch build branches that are not filed as a PR.
      * @param buildBranchWithPr build branches that are also PRs.
      */
     public BranchDiscoveryTrait(boolean buildBranch, boolean buildBranchWithPr) {
-        this.strategyId = (buildBranch ? 1 : 0) + (buildBranchWithPr ? 2 : 0);
+        this.strategyId = (buildBranch ? EXCLUDE_PRS : NONE) + (buildBranchWithPr ? ONLY_PRS : NONE);
     }
 
     /**
@@ -99,7 +109,7 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
      */
     @Restricted(NoExternalUse.class)
     public boolean isBuildBranch() {
-        return (strategyId & 1) != 0;
+        return (strategyId & EXCLUDE_PRS) != NONE;
     }
 
     /**
@@ -109,69 +119,58 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
      */
     @Restricted(NoExternalUse.class)
     public boolean isBuildBranchesWithPR() {
-        return (strategyId & 2) != 0;
+        return (strategyId & ONLY_PRS) != NONE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void decorateContext(SCMSourceContext<?, ?> context) {
         GitHubSCMSourceContext ctx = (GitHubSCMSourceContext) context;
         ctx.wantBranches(true);
         ctx.withAuthority(new BranchSCMHeadAuthority());
         switch (strategyId) {
-            case 1:
+            case BranchDiscoveryTrait.EXCLUDE_PRS:
                 ctx.wantOriginPRs(true);
                 ctx.withFilter(new ExcludeOriginPRBranchesSCMHeadFilter());
                 break;
-            case 2:
+            case BranchDiscoveryTrait.ONLY_PRS:
                 ctx.wantOriginPRs(true);
                 ctx.withFilter(new OnlyOriginPRBranchesSCMHeadFilter());
                 break;
-            case 3:
+            case BranchDiscoveryTrait.ALL_BRANCHES:
             default:
-                // we don't care if it is a PR or not, we're taking them all, no need to ask for PRs and no need
+                // we don't care if it is a PR or not, we're taking them all, no need to ask for PRs and no
+                // need
                 // to filter
                 break;
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean includeCategory(@NonNull SCMHeadCategory category) {
         return category.isUncategorized();
     }
 
-    /**
-     * Our descriptor.
-     */
+    /** Our descriptor. */
     @Symbol("gitHubBranchDiscovery")
     @Extension
     @Discovery
     public static class DescriptorImpl extends SCMSourceTraitDescriptor {
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public String getDisplayName() {
             return Messages.BranchDiscoveryTrait_displayName();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public Class<? extends SCMSourceContext> getContextClass() {
             return GitHubSCMSourceContext.class;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public Class<? extends SCMSource> getSourceClass() {
             return GitHubSCMSource.class;
@@ -187,42 +186,32 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
         @SuppressWarnings("unused") // stapler
         public ListBoxModel doFillStrategyIdItems() {
             ListBoxModel result = new ListBoxModel();
-            result.add(Messages.BranchDiscoveryTrait_excludePRs(), "1");
-            result.add(Messages.BranchDiscoveryTrait_onlyPRs(), "2");
-            result.add(Messages.BranchDiscoveryTrait_allBranches(), "3");
+            result.add(Messages.BranchDiscoveryTrait_excludePRs(), String.valueOf(EXCLUDE_PRS));
+            result.add(Messages.BranchDiscoveryTrait_onlyPRs(), String.valueOf(ONLY_PRS));
+            result.add(Messages.BranchDiscoveryTrait_allBranches(), String.valueOf(ALL_BRANCHES));
             return result;
         }
     }
 
-    /**
-     * Trusts branches from the origin repository.
-     */
+    /** Trusts branches from the origin repository. */
     public static class BranchSCMHeadAuthority extends SCMHeadAuthority<SCMSourceRequest, BranchSCMHead, SCMRevision> {
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         protected boolean checkTrusted(@NonNull SCMSourceRequest request, @NonNull BranchSCMHead head) {
             return true;
         }
 
-        /**
-         * Out descriptor.
-         */
+        /** Out descriptor. */
         @Symbol("gitHubBranchHeadAuthority")
         @Extension
         public static class DescriptorImpl extends SCMHeadAuthorityDescriptor {
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override
             public String getDisplayName() {
                 return Messages.BranchDiscoveryTrait_authorityDisplayName();
             }
 
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override
             public boolean isApplicableToOrigin(@NonNull Class<? extends SCMHeadOrigin> originClass) {
                 return SCMHeadOrigin.Default.class.isAssignableFrom(originClass);
@@ -230,13 +219,9 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
         }
     }
 
-    /**
-     * Filter that excludes branches that are also filed as a pull request.
-     */
+    /** Filter that excludes branches that are also filed as a pull request. */
     public static class ExcludeOriginPRBranchesSCMHeadFilter extends SCMHeadFilter {
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public boolean isExcluded(@NonNull SCMSourceRequest request, @NonNull SCMHead head) {
             if (head instanceof BranchSCMHead && request instanceof GitHubSCMSourceRequest) {
@@ -245,12 +230,16 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
                     if (headRepo != null // head repo can be null if the PR is from a repo that has been deleted
                             && p.getBase().getRepository().getFullName().equalsIgnoreCase(headRepo.getFullName())
                             && p.getHead().getRef().equals(head.getName())) {
+                        // Log that we ignore the branch and why.
                         // End the format with newline to avoid logging this
-                        // result blocked together with a later indexed branch
-                        request.listener().getLogger().format(
+                        // result blocked together with a later indexed branch.
+                        request
+                            .listener()
+                            .getLogger()
+                            .format(
                                 "Ignoring %s because current strategy excludes branches "
-                                + "that ARE also filed as a pull request%n"
-                                , head.toString());
+                                    + "that ARE also filed as a pull request%n",
+                                head.toString());
                         return true;
                     }
                 }
@@ -259,13 +248,9 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
         }
     }
 
-    /**
-     * Filter that excludes branches that are not also filed as a pull request.
-     */
+    /** Filter that excludes branches that are not also filed as a pull request. */
     public static class OnlyOriginPRBranchesSCMHeadFilter extends SCMHeadFilter {
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public boolean isExcluded(@NonNull SCMSourceRequest request, @NonNull SCMHead head) {
             if (head instanceof BranchSCMHead && request instanceof GitHubSCMSourceRequest) {
@@ -277,10 +262,16 @@ public class BranchDiscoveryTrait extends SCMSourceTrait {
                         return false;
                     }
                 }
-                request.listener().getLogger().format(
+                // Log that we ignore the branch and why.
+                // End the format with newline to avoid logging this
+                // result blocked together with a later indexed branch.
+                request
+                    .listener()
+                    .getLogger()
+                    .format(
                         "Ignoring %s because current strategy excludes branches "
-                        + "that ARE NOT also filed as a pull request%n"
-                        , head.toString());
+                            + "that ARE NOT also filed as a pull request%n",
+                        head.toString());
                 return true;
             }
             return false;

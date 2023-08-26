@@ -55,14 +55,14 @@ import jenkins.scm.api.SCMSource;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 
-
 /**
  * Manages GitHub Statuses.
  *
- * Job (associated to a PR) scheduled: PENDING
- * Build doing a checkout: PENDING
- * Build done: SUCCESS, FAILURE or ERROR
- *
+ * <ul>
+ *   <li>Job (associated to a PR) scheduled: PENDING
+ *   <li>Build doing a checkout: PENDING
+ *   <li>Build done: SUCCESS, FAILURE or ERROR
+ * </ul>
  */
 public class GitHubBuildStatusNotification {
 
@@ -80,45 +80,56 @@ public class GitHubBuildStatusNotification {
                         Result result = build.getResult();
                         String revisionToNotify = resolveHeadCommit(revision);
                         SCMHead head = revision.getHead();
-                        List<AbstractGitHubNotificationStrategy> strategies = new GitHubSCMSourceContext(null, SCMHeadObserver.none())
-                                .withTraits(((GitHubSCMSource) src).getTraits()).notificationStrategies();
+                        List<AbstractGitHubNotificationStrategy> strategies = new GitHubSCMSourceContext(
+                                        null, SCMHeadObserver.none())
+                                .withTraits(((GitHubSCMSource) src).getTraits())
+                                .notificationStrategies();
                         for (AbstractGitHubNotificationStrategy strategy : strategies) {
                             // TODO allow strategies to combine/cooperate on a notification
-                            GitHubNotificationContext notificationContext = GitHubNotificationContext.build(null, build,
-                                    src, head);
-                            List<GitHubNotificationRequest> details = strategy.notifications(notificationContext, listener);
+                            GitHubNotificationContext notificationContext =
+                                    GitHubNotificationContext.build(null, build, src, head);
+                            List<GitHubNotificationRequest> details =
+                                    strategy.notifications(notificationContext, listener);
                             for (GitHubNotificationRequest request : details) {
                                 boolean ignoreError = request.isIgnoreError();
                                 try {
-                                    repo.createCommitStatus(revisionToNotify, request.getState(), request.getUrl(), request.getMessage(),
+                                    repo.createCommitStatus(
+                                            revisionToNotify,
+                                            request.getState(),
+                                            request.getUrl(),
+                                            request.getMessage(),
                                             request.getContext());
                                 } catch (FileNotFoundException fnfe) {
                                     if (!ignoreError) {
-                                        listener.getLogger().format("%nCould not update commit status, please check if your scan " +
-                                                "credentials belong to a member of the organization or a collaborator of the " +
-                                                "repository and repo:status scope is selected%n%n");
+                                        listener.getLogger()
+                                                .format("%nCould not update commit status, please check if your scan "
+                                                        + "credentials belong to a member of the organization or a collaborator of the "
+                                                        + "repository and repo:status scope is selected%n%n");
                                         if (LOGGER.isLoggable(Level.FINE)) {
-                                            LOGGER.log(Level.FINE, "Could not update commit status, for run "
-                                                    + build.getFullDisplayName()
-                                                    + " please check if your scan "
-                                                    + "credentials belong to a member of the organization or a "
-                                                    + "collaborator of the repository and repo:status scope is selected", fnfe);
+                                            LOGGER.log(
+                                                    Level.FINE,
+                                                    "Could not update commit status, for run "
+                                                            + build.getFullDisplayName()
+                                                            + " please check if your scan "
+                                                            + "credentials belong to a member of the organization or a "
+                                                            + "collaborator of the repository and repo:status scope is selected",
+                                                    fnfe);
                                         }
                                     }
                                 }
                             }
                         }
                         if (result != null) {
-                            listener.getLogger().format("%n" + Messages.GitHubBuildStatusNotification_CommitStatusSet() + "%n%n");
+                            listener.getLogger()
+                                    .format("%n" + Messages.GitHubBuildStatusNotification_CommitStatusSet() + "%n%n");
                         }
                     }
                 } finally {
                     Connector.release(gitHub);
                 }
             } catch (IOException ioe) {
-                listener.getLogger().format("%n"
-                        + "Could not update commit status. Message: %s%n"
-                        + "%n", ioe.getMessage());
+                listener.getLogger()
+                        .format("%n" + "Could not update commit status. Message: %s%n" + "%n", ioe.getMessage());
                 if (LOGGER.isLoggable(Level.FINE)) {
                     LOGGER.log(Level.FINE, "Could not update commit status of run " + build.getFullDisplayName(), ioe);
                 }
@@ -130,11 +141,12 @@ public class GitHubBuildStatusNotification {
      * Returns the GitHub Repository associated to a Job.
      *
      * @param job A {@link Job}
-     * @return A {@link GHRepository} or null, either if a scan credentials was not provided, or a GitHubSCMSource was not defined.
+     * @return A {@link GHRepository} or null, either if a scan credentials was not provided, or a
+     *     GitHubSCMSource was not defined.
      * @throws IOException
      */
     @CheckForNull
-    private static GHRepository lookUpRepo(GitHub github, @NonNull Job<?,?> job) throws IOException {
+    private static GHRepository lookUpRepo(GitHub github, @NonNull Job<?, ?> job) throws IOException {
         if (github == null) {
             return null;
         }
@@ -152,12 +164,12 @@ public class GitHubBuildStatusNotification {
      * Returns the GitHub Repository associated to a Job.
      *
      * @param job A {@link Job}
-     * @return A {@link GHRepository} or {@code null}, if any of: a credentials was not provided; notifications were
-     * disabled, or the job is not from a {@link GitHubSCMSource}.
+     * @return A {@link GHRepository} or {@code null}, if any of: a credentials was not provided;
+     *     notifications were disabled, or the job is not from a {@link GitHubSCMSource}.
      * @throws IOException
      */
     @CheckForNull
-    private static GitHub lookUpGitHub(@NonNull Job<?,?> job) throws IOException {
+    private static GitHub lookUpGitHub(@NonNull Job<?, ?> job) throws IOException {
         SCMSource src = SCMSource.SourceByItem.findSource(job);
         if (src instanceof GitHubSCMSource) {
             GitHubSCMSource source = (GitHubSCMSource) src;
@@ -167,8 +179,10 @@ public class GitHubBuildStatusNotification {
                 return null;
             }
             if (source.getScanCredentialsId() != null) {
-                return Connector.connect(source.getApiUri(), Connector.lookupScanCredentials
-                        (job, source.getApiUri(), source.getScanCredentialsId()));
+                return Connector.connect(
+                        source.getApiUri(),
+                        Connector.lookupScanCredentials(
+                                job, source.getApiUri(), source.getScanCredentialsId(), source.getRepoOwner()));
             }
         }
         return null;
@@ -176,21 +190,20 @@ public class GitHubBuildStatusNotification {
 
     /**
      * With this listener one notifies to GitHub when a Job has been scheduled.
-     * Sends: GHCommitState.PENDING
+     *
+     * <p>Sends: GHCommitState.PENDING
      */
     @Extension
     public static class JobScheduledListener extends QueueListener {
 
-        /**
-         * Manages the GitHub Commit Pending Status.
-         */
+        /** Manages the GitHub Commit Pending Status. */
         @Override
         public void onEnterWaiting(Queue.WaitingItem wi) {
             if (!(wi.task instanceof Job)) {
                 return;
             }
             final long taskId = wi.getId();
-            final Job<?,?> job = (Job) wi.task;
+            final Job<?, ?> job = (Job) wi.task;
             final SCMSource source = SCMSource.SourceByItem.findSource(job);
             if (!(source instanceof GitHubSCMSource)) {
                 return;
@@ -208,9 +221,8 @@ public class GitHubBuildStatusNotification {
             Computer.threadPoolForRemoting.submit(new Runnable() {
                 @Override
                 public void run() {
-                    GitHub gitHub = null;
                     try {
-                        gitHub = lookUpGitHub(job);
+                        GitHub gitHub = lookUpGitHub(job);
                         try {
                             if (gitHub == null || gitHub.rateLimit().remaining < 8) {
                                 // we are an optimization to signal commit status early, no point waiting for
@@ -218,7 +230,7 @@ public class GitHubBuildStatusNotification {
                                 return;
                             }
                             String hash = resolveHeadCommit(source.fetch(head, null));
-                            if (gitHub.rateLimit().remaining < 8) {  // should only need 2 but may be concurrent threads
+                            if (gitHub.rateLimit().remaining < 8) { // should only need 2 but may be concurrent threads
                                 // we are an optimization to signal commit status early, no point waiting for
                                 // the rate limit to refresh as the checkout will ensure the status is set
                                 return;
@@ -227,25 +239,34 @@ public class GitHubBuildStatusNotification {
                             if (repo != null) {
                                 // The submitter might push another commit before this build even starts.
                                 if (Jenkins.get().getQueue().getItem(taskId) instanceof Queue.LeftItem) {
-                                    // we took too long and the item has left the queue, no longer valid to apply pending
+                                    // we took too long and the item has left the queue, no longer valid to apply
+                                    // pending
 
-                                    // status. JobCheckOutListener is now responsible for setting the pending status.
+                                    // status. JobCheckOutListener is now responsible for setting the pending
+                                    // status.
                                     return;
                                 }
-                                List<AbstractGitHubNotificationStrategy> strategies = sourceContext.notificationStrategies();
+                                List<AbstractGitHubNotificationStrategy> strategies =
+                                        sourceContext.notificationStrategies();
                                 for (AbstractGitHubNotificationStrategy strategy : strategies) {
                                     // TODO allow strategies to combine/cooperate on a notification
-                                    GitHubNotificationContext notificationContext = GitHubNotificationContext.build(job, null,
-                                            source, head);
-                                    List<GitHubNotificationRequest> details = strategy.notifications(notificationContext, null);
+                                    GitHubNotificationContext notificationContext =
+                                            GitHubNotificationContext.build(job, null, source, head);
+                                    List<GitHubNotificationRequest> details =
+                                            strategy.notifications(notificationContext, null);
                                     for (GitHubNotificationRequest request : details) {
                                         boolean ignoreErrors = request.isIgnoreError();
                                         try {
-                                            repo.createCommitStatus(hash, request.getState(), request.getUrl(), request.getMessage(),
+                                            repo.createCommitStatus(
+                                                    hash,
+                                                    request.getState(),
+                                                    request.getUrl(),
+                                                    request.getMessage(),
                                                     request.getContext());
                                         } catch (FileNotFoundException e) {
                                             if (!ignoreErrors) {
-                                                LOGGER.log(Level.WARNING,
+                                                LOGGER.log(
+                                                        Level.WARNING,
                                                         "Could not update commit status to PENDING. Valid scan credentials? Valid scopes?",
                                                         LOGGER.isLoggable(Level.FINE) ? e : null);
                                             }
@@ -257,54 +278,60 @@ public class GitHubBuildStatusNotification {
                             Connector.release(gitHub);
                         }
                     } catch (FileNotFoundException e) {
-                        LOGGER.log(Level.WARNING,
+                        LOGGER.log(
+                                Level.WARNING,
                                 "Could not update commit status to PENDING. Valid scan credentials? Valid scopes?",
                                 LOGGER.isLoggable(Level.FINE) ? e : null);
                     } catch (IOException e) {
-                        LOGGER.log(Level.WARNING,
+                        LOGGER.log(
+                                Level.WARNING,
                                 "Could not update commit status to PENDING. Message: " + e.getMessage(),
                                 LOGGER.isLoggable(Level.FINE) ? e : null);
                     } catch (InterruptedException e) {
-                        LOGGER.log(Level.WARNING,
+                        LOGGER.log(
+                                Level.WARNING,
                                 "Could not update commit status to PENDING. Rate limit exhausted",
                                 LOGGER.isLoggable(Level.FINE) ? e : null);
                         LOGGER.log(Level.FINE, null, e);
-                    } finally {
-                        Connector.release(gitHub);
                     }
                 }
             });
         }
-
     }
 
     /**
      * With this listener one notifies to GitHub when the SCM checkout process has started.
-     * Possible option: GHCommitState.PENDING
+     *
+     * <p>Possible option: GHCommitState.PENDING
      */
     @Extension
     public static class JobCheckOutListener extends SCMListener {
 
         @Override
-        public void onCheckout(Run<?, ?> build, SCM scm, FilePath workspace, TaskListener listener, File changelogFile,
-                               SCMRevisionState pollingBaseline) throws Exception {
+        public void onCheckout(
+                Run<?, ?> build,
+                SCM scm,
+                FilePath workspace,
+                TaskListener listener,
+                File changelogFile,
+                SCMRevisionState pollingBaseline)
+                throws Exception {
             createBuildCommitStatus(build, listener);
         }
-
     }
 
     /**
      * With this listener one notifies to GitHub the build result.
-     * Possible options: GHCommitState.SUCCESS, GHCommitState.ERROR or GHCommitState.FAILURE
+     *
+     * <p>Possible options: GHCommitState.SUCCESS, GHCommitState.ERROR or GHCommitState.FAILURE
      */
     @Extension
-    public static class JobCompletedListener extends RunListener<Run<?,?>> {
+    public static class JobCompletedListener extends RunListener<Run<?, ?>> {
 
         @Override
         public void onCompleted(Run<?, ?> build, TaskListener listener) {
             createBuildCommitStatus(build, listener);
         }
-
     }
 
     private static String resolveHeadCommit(SCMRevision revision) throws IllegalArgumentException {
@@ -318,5 +345,4 @@ public class GitHubBuildStatusNotification {
     }
 
     private GitHubBuildStatusNotification() {}
-
 }

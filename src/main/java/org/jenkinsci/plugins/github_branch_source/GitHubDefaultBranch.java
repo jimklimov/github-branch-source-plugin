@@ -28,15 +28,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.InvisibleAction;
 import java.io.Serializable;
 
-/**
- * @author Stephen Connolly
- */
+/** @author Stephen Connolly */
 public class GitHubDefaultBranch extends InvisibleAction implements Serializable {
     private static final long serialVersionUID = 1L;
+
     @NonNull
     private final String repoOwner;
+
     @NonNull
     private final String repository;
+
     @NonNull
     private final String defaultBranch;
 
@@ -91,12 +92,16 @@ public class GitHubDefaultBranch extends InvisibleAction implements Serializable
 
     @Override
     public String toString() {
-        return "GitHubDefaultBranch{" +
-                "repoOwner='" + repoOwner + '\'' +
-                ", repository='" + repository + '\'' +
-                ", defaultBranch='" + defaultBranch + '\'' +
-                '}';
+        return "GitHubDefaultBranch{"
+                + "repoOwner='"
+                + repoOwner
+                + '\''
+                + ", repository='"
+                + repository
+                + '\''
+                + ", defaultBranch='"
+                + defaultBranch
+                + '\''
+                + '}';
     }
-
-
 }

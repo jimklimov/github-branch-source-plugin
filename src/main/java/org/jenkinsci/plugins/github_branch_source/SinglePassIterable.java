@@ -10,21 +10,17 @@ import java.util.NoSuchElementException;
 import net.jcip.annotations.GuardedBy;
 
 /**
- * Takes either an {@link Iterable} or an {@link Iterator} and converts it into a {@link Iterable} that will walk
- * the backing {@link Iterator} once only but can be walked repeatedly itself.
+ * Takes either an {@link Iterable} or an {@link Iterator} and converts it into a {@link Iterable}
+ * that will walk the backing {@link Iterator} once only but can be walked repeatedly itself.
  *
  * @param <V>
  */
 class SinglePassIterable<V> implements Iterable<V> {
-    /**
-     * The delegate.
-     */
+    /** The delegate. */
     @GuardedBy("items")
     @CheckForNull
     private Iterator<V> delegate;
-    /**
-     * The items we have seen so far.
-     */
+    /** The items we have seen so far. */
     private final List<V> items;
 
     /**
@@ -46,9 +42,7 @@ class SinglePassIterable<V> implements Iterable<V> {
         items = new ArrayList<>();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public final Iterator<V> iterator() {
         synchronized (items) {
@@ -60,17 +54,13 @@ class SinglePassIterable<V> implements Iterable<V> {
         return new Iterator<V>() {
             int index = 0;
 
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }
 
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override
             public boolean hasNext() {
                 synchronized (items) {
@@ -88,9 +78,7 @@ class SinglePassIterable<V> implements Iterable<V> {
                 }
             }
 
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override
             public V next() {
                 synchronized (items) {
@@ -102,7 +90,7 @@ class SinglePassIterable<V> implements Iterable<V> {
                             V element = delegate.next();
                             observe(element);
                             items.add(element);
-                            //Index needs to be incremented
+                            // Index needs to be incremented
                             index++;
                             return element;
                         } else {
@@ -125,12 +113,8 @@ class SinglePassIterable<V> implements Iterable<V> {
      *
      * @param v the element.
      */
-    protected void observe(V v) {
-    }
+    protected void observe(V v) {}
 
-    /**
-     * Callback for when the delegate has reached the end.
-     */
-    protected void completed() {
-    }
+    /** Callback for when the delegate has reached the end. */
+    protected void completed() {}
 }

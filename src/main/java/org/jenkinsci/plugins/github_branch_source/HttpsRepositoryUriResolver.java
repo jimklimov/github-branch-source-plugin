@@ -24,14 +24,10 @@
 
 package org.jenkinsci.plugins.github_branch_source;
 
-/**
- * A {@link RepositoryUriResolver} that resolves HTTP git URLs.
- */
+/** A {@link RepositoryUriResolver} that resolves HTTP git URLs. */
 public class HttpsRepositoryUriResolver extends RepositoryUriResolver {
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getRepositoryUri(String apiUri, String owner, String repository) {
         if (apiUri == null || apiUri.startsWith("https://")) {

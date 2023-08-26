@@ -33,39 +33,34 @@ import jenkins.scm.api.trait.SCMSourceBuilder;
  * @since 2.2.0
  */
 public class GitHubSCMSourceBuilder extends SCMSourceBuilder<GitHubSCMSourceBuilder, GitHubSCMSource> {
-    /**
-     * The {@link GitHubSCMSource#getId()}.
-     */
+    /** The {@link GitHubSCMSource#getId()}. */
     @CheckForNull
     private final String id;
-    /**
-     * The {@link GitHubSCMSource#getApiUri()}.
-     */
+    /** The {@link GitHubSCMSource#getApiUri()}. */
     @CheckForNull
     private final String apiUri;
-    /**
-     * The credentials id or {@code null} to use anonymous scanning.
-     */
+    /** The credentials id or {@code null} to use anonymous scanning. */
     @CheckForNull
     private final String credentialsId;
-    /**
-     * The repository owner.
-     */
+    /** The repository owner. */
     @NonNull
     private final String repoOwner;
 
     /**
      * Constructor.
      *
-     * @param id            the {@link GitHubSCMSource#getId()}
-     * @param apiUri        the {@link GitHubSCMSource#getApiUri()}
+     * @param id the {@link GitHubSCMSource#getId()}
+     * @param apiUri the {@link GitHubSCMSource#getApiUri()}
      * @param credentialsId the credentials id.
-     * @param repoOwner     the repository owner.
-     * @param repoName      the project name.
+     * @param repoOwner the repository owner.
+     * @param repoName the project name.
      */
-    public GitHubSCMSourceBuilder(@CheckForNull String id, @CheckForNull String apiUri,
-                                  @CheckForNull String credentialsId, @NonNull String repoOwner,
-                                  @NonNull String repoName) {
+    public GitHubSCMSourceBuilder(
+            @CheckForNull String id,
+            @CheckForNull String apiUri,
+            @CheckForNull String credentialsId,
+            @NonNull String repoOwner,
+            @NonNull String repoName) {
         super(GitHubSCMSource.class, repoName);
         this.id = id;
         this.apiUri = apiUri;
@@ -112,9 +107,7 @@ public class GitHubSCMSourceBuilder extends SCMSourceBuilder<GitHubSCMSourceBuil
         return repoOwner;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public GitHubSCMSource build() {

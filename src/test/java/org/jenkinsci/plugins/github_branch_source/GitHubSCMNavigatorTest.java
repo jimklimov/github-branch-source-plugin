@@ -25,6 +25,10 @@
 
 package org.jenkinsci.plugins.github_branch_source;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertEquals;
+
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
@@ -43,6 +47,7 @@ import hudson.security.SecurityRealm;
 import hudson.util.ListBoxModel;
 import hudson.util.LogTaskListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -64,8 +69,6 @@ import org.jvnet.hudson.test.MockAuthorizationStrategy;
 import org.jvnet.hudson.test.MockFolder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-
-import static org.hamcrest.Matchers.*;
 
 public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
 
@@ -93,8 +96,8 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
     }
 
     private void setCredentials(List<Credentials> credentials) {
-        SystemCredentialsProvider.getInstance().setDomainCredentialsMap(
-                Collections.singletonMap(Domain.global(), credentials));
+        SystemCredentialsProvider.getInstance()
+                .setDomainCredentialsMap(Collections.singletonMap(Domain.global(), credentials));
     }
 
     @Test
@@ -108,6 +111,17 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
     }
 
     @Test
+    public void fetchReposWithoutTeamSlug() throws Exception {
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(SCMSourceObserver.filter(
+                observer, "Hello-World", "github-branch-source-plugin", "unknown", "basic", "yolo", "yolo-archived"));
+
+        assertThat(projectNames, containsInAnyOrder("basic", "yolo", "yolo-archived"));
+    }
+
+    @Test
     public void fetchReposFromTeamSlug() throws Exception {
         final Set<String> projectNames = new HashSet<>();
         final SCMSourceObserver observer = getObserver(projectNames);
@@ -115,9 +129,38 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
         List<SCMTrait<? extends SCMTrait<?>>> traits = new ArrayList<>(navigator.getTraits());
         traits.add(new TeamSlugTrait("justice-league"));
         navigator.setTraits(traits);
-        navigator.visitSources(SCMSourceObserver.filter(observer, "Hello-World", "github-branch-source-plugin"));
+        navigator.visitSources(SCMSourceObserver.filter(
+                observer, "Hello-World", "github-branch-source-plugin", "unknown", "basic", "yolo", "yolo-archived"));
 
-        assertThat(projectNames, containsInAnyOrder("Hello-World", "github-branch-source-plugin"));
+        assertThat(
+                projectNames,
+                containsInAnyOrder("Hello-World", "github-branch-source-plugin", "basic", "yolo-archived"));
+    }
+
+    @Test
+    public void fetchOneRepoWithTeamSlug_InTeam() throws Exception {
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        List<SCMTrait<? extends SCMTrait<?>>> traits = new ArrayList<>(navigator.getTraits());
+        traits.add(new TeamSlugTrait("justice-league"));
+        navigator.setTraits(traits);
+        navigator.visitSources(SCMSourceObserver.filter(observer, "yolo-archived"));
+
+        assertThat(projectNames, containsInAnyOrder("yolo-archived"));
+    }
+
+    @Test
+    public void fetchOneRepoWithTeamSlug_NotInTeam() throws Exception {
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        List<SCMTrait<? extends SCMTrait<?>>> traits = new ArrayList<>(navigator.getTraits());
+        traits.add(new TeamSlugTrait("justice-league"));
+        navigator.setTraits(traits);
+        navigator.visitSources(SCMSourceObserver.filter(observer, "yolo"));
+
+        assertThat(projectNames, empty());
     }
 
     @Test
@@ -133,6 +176,58 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
     }
 
     @Test
+    public void fetchRepos_BelongingToAuthenticatedUser_FilteredByTopic() throws Exception {
+        setCredentials(Collections.singletonList(credentials));
+        navigator = navigatorForRepoOwner("stephenc", credentials.getId());
+        navigator.setTraits(Collections.singletonList(new TopicsTrait("awesome")));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(observer);
+
+        assertEquals(projectNames, Collections.singleton("yolo"));
+    }
+
+    @Test
+    public void fetchRepos_BelongingToAuthenticatedUser_FilteredByTopic_ExcludeForks() throws Exception {
+        setCredentials(Collections.singletonList(credentials));
+        navigator = navigatorForRepoOwner("stephenc", credentials.getId());
+        navigator.setTraits(Arrays.asList(new TopicsTrait("api"), new ExcludeForkedRepositoriesTrait()));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(observer);
+
+        assertEquals(Collections.singleton("yolo-archived"), projectNames);
+    }
+
+    @Test
+    public void fetchRepos_BelongingToAuthenticatedUser_FilteredByTopic_RemovesAll() throws Exception {
+        setCredentials(Collections.singletonList(credentials));
+        navigator = navigatorForRepoOwner("stephenc", credentials.getId());
+        navigator.setTraits(Collections.singletonList(new TopicsTrait("nope")));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(observer);
+
+        assertEquals(projectNames, Collections.emptySet());
+    }
+
+    @Test
+    public void fetchRepos_BelongingToAuthenticatedUser_FilteredByMultipleTopics() throws Exception {
+        setCredentials(Collections.singletonList(credentials));
+        navigator = navigatorForRepoOwner("stephenc", credentials.getId());
+        navigator.setTraits(Collections.singletonList(new TopicsTrait("cool, great,was-awesome")));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(observer);
+
+        assertEquals(projectNames, Collections.singleton("yolo-archived"));
+    }
+
+    @Test
     public void fetchOneRepo_BelongingToAuthenticatedUser_ExcludingArchived() throws Exception {
         setCredentials(Collections.singletonList(credentials));
         navigator = navigatorForRepoOwner("stephenc", credentials.getId());
@@ -143,6 +238,45 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
         navigator.visitSources(SCMSourceObserver.filter(observer, "yolo-archived"));
 
         assertThat(projectNames, empty());
+    }
+
+    @Test
+    public void fetchOneRepo_ExcludingPublic() throws Exception {
+        setCredentials(Collections.singletonList(credentials));
+        navigator = navigatorForRepoOwner("stephenc", credentials.getId());
+        navigator.setTraits(Collections.singletonList(new ExcludePublicRepositoriesTrait()));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(SCMSourceObserver.filter(observer, "yolo-private"));
+
+        assertThat(projectNames, containsInAnyOrder("yolo-private"));
+    }
+
+    @Test
+    public void fetchOneRepo_ExcludingPrivate() throws Exception {
+        setCredentials(Collections.singletonList(credentials));
+        navigator = navigatorForRepoOwner("stephenc", credentials.getId());
+        navigator.setTraits(Collections.singletonList(new ExcludePrivateRepositoriesTrait()));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(SCMSourceObserver.filter(observer, "yolo"));
+
+        assertThat(projectNames, containsInAnyOrder("yolo"));
+    }
+
+    @Test
+    public void fetchOneRepo_ExcludingForked() throws Exception {
+        setCredentials(Collections.singletonList(credentials));
+        navigator = navigatorForRepoOwner("stephenc", credentials.getId());
+        navigator.setTraits(Collections.singletonList(new ExcludeForkedRepositoriesTrait()));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(SCMSourceObserver.filter(observer, "yolo-private"));
+
+        assertThat(projectNames, containsInAnyOrder("yolo-private"));
     }
 
     @Test
@@ -219,10 +353,9 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
         final Set<String> projectNames = new HashSet<>();
         final SCMSourceObserver observer = getObserver(projectNames);
 
-        navigator.visitSources(
-                SCMSourceObserver.filter(observer, "Hello-World", "github-branch-source-plugin", "yolo-archived"));
+        navigator.visitSources(SCMSourceObserver.filter(observer, "unknown", "basic", "yolo", "yolo-archived"));
 
-        assertThat(projectNames, containsInAnyOrder("Hello-World", "github-branch-source-plugin", "yolo-archived"));
+        assertThat(projectNames, containsInAnyOrder("basic", "yolo", "yolo-archived"));
     }
 
     @Test
@@ -231,10 +364,32 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
         final Set<String> projectNames = new HashSet<>();
         final SCMSourceObserver observer = getObserver(projectNames);
 
-        navigator.visitSources(
-                SCMSourceObserver.filter(observer, "Hello-World", "github-branch-source-plugin", "yolo-archived"));
+        navigator.visitSources(SCMSourceObserver.filter(observer, "unknown", "basic", "yolo", "yolo-archived"));
 
-        assertThat(projectNames, containsInAnyOrder("Hello-World", "github-branch-source-plugin"));
+        assertThat(projectNames, containsInAnyOrder("basic", "yolo"));
+    }
+
+    @Test
+    public void fetchRepos_BelongingToOrg_ExcludingPublic() throws Exception {
+        navigator.setTraits(Collections.singletonList(new ExcludePublicRepositoriesTrait()));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(
+                SCMSourceObserver.filter(observer, "Hello-World", "github-branch-source-plugin", "yolo-private"));
+
+        assertThat(projectNames, containsInAnyOrder("yolo-private"));
+    }
+
+    @Test
+    public void fetchRepos_BelongingToOrg_ExcludingPrivate() throws Exception {
+        navigator.setTraits(Collections.singletonList(new ExcludePrivateRepositoriesTrait()));
+        final Set<String> projectNames = new HashSet<>();
+        final SCMSourceObserver observer = getObserver(projectNames);
+
+        navigator.visitSources(SCMSourceObserver.filter(observer, "basic", "advanced", "yolo-private"));
+
+        assertThat(projectNames, containsInAnyOrder("basic", "advanced"));
     }
 
     @Test
@@ -245,7 +400,7 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
 
         navigator.visitSources(observer);
 
-        assertThat(projectNames, containsInAnyOrder("yolo", "yolo-archived"));
+        assertThat(projectNames, containsInAnyOrder("yolo", "yolo-archived", "yolo-private"));
     }
 
     @Test
@@ -265,19 +420,20 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
         final Set<String> projectNames = new HashSet<>();
         final SCMSourceObserver observer = getObserver(projectNames);
 
-        navigator.visitSources(SCMSourceObserver.filter(observer, "Hello-World", "other-repo"));
+        navigator.visitSources(SCMSourceObserver.filter(observer, "yolo", "rando-unknown"));
 
-        assertEquals(projectNames, Collections.singleton("Hello-World"));
+        assertEquals(projectNames, Collections.singleton("yolo"));
     }
 
     @Test
     public void fetchActions() throws Exception {
-        assertThat(navigator.fetchActions(Mockito.mock(SCMNavigatorOwner.class), null, null), Matchers.containsInAnyOrder(
-                Matchers.is(
-                        new ObjectMetadataAction("CloudBeers, Inc.", null, "https://github.com/cloudbeers")
-                ),
-                Matchers.is(new GitHubOrgMetadataAction("https://avatars.githubusercontent.com/u/4181899?v=3")),
-                Matchers.is(new GitHubLink("icon-github-logo", "https://github.com/cloudbeers"))));
+        assertThat(
+                navigator.fetchActions(Mockito.mock(SCMNavigatorOwner.class), null, null),
+                Matchers.containsInAnyOrder(
+                        Matchers.is(
+                                new ObjectMetadataAction("CloudBeers, Inc.", null, "https://github.com/cloudbeers")),
+                        Matchers.is(new GitHubOrgMetadataAction("https://avatars.githubusercontent.com/u/4181899?v=3")),
+                        Matchers.is(new GitHubLink("icon-github-logo", "https://github.com/cloudbeers"))));
     }
 
     @Test
@@ -297,7 +453,9 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
             try (ACLContext ctx = ACL.as(User.getById("admin", true).impersonate())) {
                 ListBoxModel rsp = d.doFillCredentialsIdItems(dummy, "", "does-not-exist");
                 assertThat("Expecting only the provided value so that form config unchanged", rsp, hasSize(1));
-                assertThat("Expecting only the provided value so that form config unchanged", rsp.get(0).value,
+                assertThat(
+                        "Expecting only the provided value so that form config unchanged",
+                        rsp.get(0).value,
                         is("does-not-exist"));
                 rsp = d.doFillCredentialsIdItems(null, "", "does-not-exist");
                 assertThat("Expecting just the empty entry", rsp, hasSize(1));
@@ -309,7 +467,9 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
                 assertThat("Expecting just the empty entry", rsp.get(0).value, is(""));
                 rsp = d.doFillCredentialsIdItems(null, "", "does-not-exist");
                 assertThat("Expecting only the provided value so that form config unchanged", rsp, hasSize(1));
-                assertThat("Expecting only the provided value so that form config unchanged", rsp.get(0).value,
+                assertThat(
+                        "Expecting only the provided value so that form config unchanged",
+                        rsp.get(0).value,
                         is("does-not-exist"));
             }
             try (ACLContext ctx = ACL.as(User.getById("jim", true).impersonate())) {
@@ -320,7 +480,10 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
             try (ACLContext ctx = ACL.as(User.getById("sue", true).impersonate())) {
                 ListBoxModel rsp = d.doFillCredentialsIdItems(dummy, "", "does-not-exist");
                 assertThat("Expecting only the provided value so that form config unchanged", rsp, hasSize(1));
-                assertThat("Expecting only the provided value so that form config unchanged", rsp.get(0).value, is("does-not-exist"));
+                assertThat(
+                        "Expecting only the provided value so that form config unchanged",
+                        rsp.get(0).value,
+                        is("does-not-exist"));
             }
         } finally {
             r.jenkins.setSecurityRealm(realm);
@@ -329,7 +492,7 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
         }
     }
 
-    private SCMSourceObserver getObserver(Collection<String> names){
+    private SCMSourceObserver getObserver(Collection<String> names) {
         return new SCMSourceObserver() {
             @NonNull
             @Override
@@ -352,10 +515,7 @@ public class GitHubSCMNavigatorTest extends AbstractGitHubWireMockTest {
 
             @Override
             public void addAttribute(@NonNull String key, @Nullable Object value)
-                    throws IllegalArgumentException, ClassCastException {
-
-            }
+                    throws IllegalArgumentException, ClassCastException {}
         };
     }
-
 }

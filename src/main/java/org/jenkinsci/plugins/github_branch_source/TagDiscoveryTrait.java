@@ -46,16 +46,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @since 2.3.0
  */
 public class TagDiscoveryTrait extends SCMSourceTrait {
-    /**
-     * Constructor for stapler.
-     */
+    /** Constructor for stapler. */
     @DataBoundConstructor
-    public TagDiscoveryTrait() {
-    }
+    public TagDiscoveryTrait() {}
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void decorateContext(SCMSourceContext<?, ?> context) {
         GitHubSCMSourceContext ctx = (GitHubSCMSourceContext) context;
@@ -63,75 +58,56 @@ public class TagDiscoveryTrait extends SCMSourceTrait {
         ctx.withAuthority(new TagSCMHeadAuthority());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean includeCategory(@NonNull SCMHeadCategory category) {
         return category instanceof TagSCMHeadCategory;
     }
 
-    /**
-     * Our descriptor.
-     */
+    /** Our descriptor. */
     @Symbol("gitHubTagDiscovery")
     @Extension
     @Discovery
     public static class DescriptorImpl extends SCMSourceTraitDescriptor {
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public String getDisplayName() {
             return Messages.TagDiscoveryTrait_displayName();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public Class<? extends SCMSourceContext> getContextClass() {
             return GitHubSCMSourceContext.class;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public Class<? extends SCMSource> getSourceClass() {
             return GitHubSCMSource.class;
         }
     }
 
-    /**
-     * Trusts tags from the origin repository.
-     */
-    public static class TagSCMHeadAuthority extends SCMHeadAuthority<SCMSourceRequest, GitHubTagSCMHead, GitTagSCMRevision> {
-        /**
-         * {@inheritDoc}
-         */
+    /** Trusts tags from the origin repository. */
+    public static class TagSCMHeadAuthority
+            extends SCMHeadAuthority<SCMSourceRequest, GitHubTagSCMHead, GitTagSCMRevision> {
+        /** {@inheritDoc} */
         @Override
         protected boolean checkTrusted(@NonNull SCMSourceRequest request, @NonNull GitHubTagSCMHead head) {
             return true;
         }
 
-        /**
-         * Out descriptor.
-         */
+        /** Out descriptor. */
         @Extension
         public static class DescriptorImpl extends SCMHeadAuthorityDescriptor {
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override
             public String getDisplayName() {
                 return Messages.TagDiscoveryTrait_authorityDisplayName();
             }
 
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override
             public boolean isApplicableToOrigin(@NonNull Class<? extends SCMHeadOrigin> originClass) {
                 return SCMHeadOrigin.Default.class.isAssignableFrom(originClass);

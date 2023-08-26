@@ -33,25 +33,19 @@ import jenkins.scm.api.metadata.AvatarMetadataAction;
  */
 public class GitHubRepoMetadataAction extends AvatarMetadataAction {
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getAvatarIconClassName() {
         return "icon-github-repo";
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String getAvatarDescription() {
         return Messages.GitHubRepoMetadataAction_IconDescription();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -61,20 +55,15 @@ public class GitHubRepoMetadataAction extends AvatarMetadataAction {
             return false;
         }
         return true;
-
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return 0;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String toString() {
         return "GitHubRepoMetadataAction{}";

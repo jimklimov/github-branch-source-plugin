@@ -9,25 +9,21 @@ import jenkins.scm.impl.trait.Selection;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
-
 /**
- * Decorates a {@link SCMNavigatorContext} with a GitHub team slug which will allow restricting the discovery of repositories
- * by specific teams
- *
+ * Decorates a {@link SCMNavigatorContext} with a GitHub team slug which will allow restricting the
+ * discovery of repositories by specific teams
  */
 public class TeamSlugTrait extends SCMNavigatorTrait {
 
-    /**
-     * The team slug.
-     */
+    /** The team slug. */
     @NonNull
     private final String teamSlug;
 
     /**
      * Stapler constructor.
      *
-     * @param teamSlug the team slug to use when searching for github repos restricted to a specific team only.
+     * @param teamSlug the team slug to use when searching for github repos restricted to a specific
+     *     team only.
      */
     @DataBoundConstructor
     public TeamSlugTrait(@NonNull String teamSlug) {
@@ -50,9 +46,7 @@ public class TeamSlugTrait extends SCMNavigatorTrait {
         ((GitHubSCMNavigatorContext) context).setTeamSlug(teamSlug);
     }
 
-    /**
-     * TeamSlug descriptor.
-     */
+    /** TeamSlug descriptor. */
     @Symbol("teamSlugFilter")
     @Extension
     @Selection
@@ -63,11 +57,10 @@ public class TeamSlugTrait extends SCMNavigatorTrait {
             return GitHubSCMNavigatorContext.class;
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return Messages.TeamSlugTrait_displayName();
         }
     }
-
 }

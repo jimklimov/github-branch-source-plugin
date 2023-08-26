@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.github_branch_source;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import jenkins.scm.api.trait.SCMNavigatorContext;
 import jenkins.scm.api.trait.SCMNavigatorTrait;
@@ -8,23 +9,17 @@ import jenkins.scm.impl.trait.Selection;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
-
 /**
- * A {@link Selection} trait that will restrict the discovery of repositories that have been archived.
+ * A {@link Selection} trait that will restrict the discovery of repositories that have been
+ * archived.
  */
 public class ExcludeArchivedRepositoriesTrait extends SCMNavigatorTrait {
 
-    /**
-     * Constructor for stapler.
-     */
+    /** Constructor for stapler. */
     @DataBoundConstructor
-    public ExcludeArchivedRepositoriesTrait() {
-    }
+    public ExcludeArchivedRepositoriesTrait() {}
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void decorateContext(SCMNavigatorContext<?, ?> context) {
         super.decorateContext(context);
@@ -32,9 +27,7 @@ public class ExcludeArchivedRepositoriesTrait extends SCMNavigatorTrait {
         ctx.setExcludeArchivedRepositories(true);
     }
 
-    /**
-     * Exclude archived repositories filter
-     */
+    /** Exclude archived repositories filter */
     @Symbol("gitHubExcludeArchivedRepositories")
     @Extension
     @Selection
@@ -45,7 +38,7 @@ public class ExcludeArchivedRepositoriesTrait extends SCMNavigatorTrait {
             return GitHubSCMNavigatorContext.class;
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return Messages.ExcludeArchivedRepositoriesTrait_displayName();

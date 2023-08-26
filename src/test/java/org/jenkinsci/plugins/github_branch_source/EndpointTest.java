@@ -1,16 +1,28 @@
 package org.jenkinsci.plugins.github_branch_source;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
-import com.gargoylesoftware.htmlunit.HttpMethod;
-import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.WebRequest;
-import com.gargoylesoftware.htmlunit.util.NameValuePair;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import hudson.ExtensionList;
 import hudson.Functions;
 import hudson.Util;
 import hudson.model.UnprotectedRootAction;
 import hudson.security.csrf.CrumbExclusion;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import jenkins.model.Jenkins;
+import org.htmlunit.FailingHttpStatusCodeException;
+import org.htmlunit.HttpMethod;
+import org.htmlunit.Page;
+import org.htmlunit.WebRequest;
+import org.htmlunit.util.NameValuePair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,23 +34,11 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.xml.sax.SAXException;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 public class EndpointTest {
 
     @Rule
     public final JenkinsRule j = new JenkinsRule();
+
     private String testUrl;
 
     @Before
@@ -51,10 +51,14 @@ public class EndpointTest {
         testUrl = Util.rawEncode(j.getURL().toString() + "testroot/");
     }
 
-    @Test @Issue("SECURITY-806")
+    @Test
+    @Issue("SECURITY-806")
     public void cantGet_doCheckApiUri() throws IOException, SAXException {
         try {
-            j.createWebClient().goTo(appendCrumb("descriptorByName/org.jenkinsci.plugins.github_branch_source.Endpoint/checkApiUri?apiUri=" + testUrl));
+            j.createWebClient()
+                    .goTo(appendCrumb(
+                            "descriptorByName/org.jenkinsci.plugins.github_branch_source.Endpoint/checkApiUri?apiUri="
+                                    + testUrl));
             fail("Should not be able to do that");
         } catch (FailingHttpStatusCodeException e) {
             assertEquals(405, e.getStatusCode());
@@ -62,10 +66,14 @@ public class EndpointTest {
         assertFalse(TestRoot.get().visited);
     }
 
-    @Test @Issue("SECURITY-806")
+    @Test
+    @Issue("SECURITY-806")
     public void cantPostAsAnonymous_doCheckApiUri() throws Exception {
         try {
-            post("descriptorByName/org.jenkinsci.plugins.github_branch_source.Endpoint/checkApiUri?apiUri=" + testUrl, null);
+            post(
+                    "descriptorByName/org.jenkinsci.plugins.github_branch_source.Endpoint/checkApiUri?apiUri="
+                            + testUrl,
+                    null);
             fail("Should not be able to do that");
         } catch (FailingHttpStatusCodeException e) {
             assertEquals(403, e.getStatusCode());
@@ -73,9 +81,12 @@ public class EndpointTest {
         assertFalse(TestRoot.get().visited);
     }
 
-    @Test @Issue("SECURITY-806")
+    @Test
+    @Issue("SECURITY-806")
     public void canPostAsAdmin_doCheckApiUri() throws Exception {
-        post("descriptorByName/org.jenkinsci.plugins.github_branch_source.Endpoint/checkApiUri?apiUri=" + testUrl, "alice");
+        post(
+                "descriptorByName/org.jenkinsci.plugins.github_branch_source.Endpoint/checkApiUri?apiUri=" + testUrl,
+                "alice");
         assertTrue(TestRoot.get().visited);
     }
 
@@ -95,9 +106,10 @@ public class EndpointTest {
             client = j.createWebClient();
         }
 
-        final WebRequest request = new WebRequest(new URL(client.getContextPath() + relative), client.getBrowserVersion().getHtmlAcceptHeader());
-        request.setHttpMethod(HttpMethod.POST);
-        request.setRequestParameters(Arrays.asList(new NameValuePair(Functions.getCrumbRequestField(), Functions.getCrumb(null))));
+        final WebRequest request = new WebRequest(new URL(client.getContextPath() + relative), HttpMethod.POST);
+        request.setAdditionalHeader("Accept", client.getBrowserVersion().getHtmlAcceptHeader());
+        request.setRequestParameters(
+                Arrays.asList(new NameValuePair(Functions.getCrumbRequestField(), Functions.getCrumb(null))));
         return client.getPage(request);
     }
 
@@ -134,7 +146,8 @@ public class EndpointTest {
     @TestExtension
     public static class CrumbExcluder extends CrumbExclusion {
         @Override
-        public boolean process(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+        public boolean process(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+                throws IOException, ServletException {
             final String pathInfo = request.getPathInfo();
             if (pathInfo == null || !pathInfo.contains("testroot")) {
                 return false;
@@ -143,5 +156,4 @@ public class EndpointTest {
             return true;
         }
     }
-
 }

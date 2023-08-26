@@ -26,13 +26,11 @@ package org.jenkinsci.plugins.github_branch_source;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-
 import jenkins.scm.api.SCMHeadObserver;
 import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.SCMSourceCriteria;
@@ -44,37 +42,28 @@ import jenkins.scm.api.trait.SCMSourceContext;
  *
  * @since 2.2.0
  */
-public class GitHubSCMSourceContext
-        extends SCMSourceContext<GitHubSCMSourceContext, GitHubSCMSourceRequest> {
-    /**
-     * {@code true} if the {@link GitHubSCMSourceRequest} will need information about branches.
-     */
+public class GitHubSCMSourceContext extends SCMSourceContext<GitHubSCMSourceContext, GitHubSCMSourceRequest> {
+    /** {@code true} if the {@link GitHubSCMSourceRequest} will need information about branches. */
     private boolean wantBranches;
-    /**
-     * {@code true} if the {@link GitHubSCMSourceRequest} will need information about tags.
-     */
+    /** {@code true} if the {@link GitHubSCMSourceRequest} will need information about tags. */
     private boolean wantTags;
     /**
-     * {@code true} if the {@link GitHubSCMSourceRequest} will need information about origin pull requests.
+     * {@code true} if the {@link GitHubSCMSourceRequest} will need information about origin pull
+     * requests.
      */
     private boolean wantOriginPRs;
     /**
-     * {@code true} if the {@link GitHubSCMSourceRequest} will need information about fork pull requests.
+     * {@code true} if the {@link GitHubSCMSourceRequest} will need information about fork pull
+     * requests.
      */
     private boolean wantForkPRs;
-    /**
-     * Set of {@link ChangeRequestCheckoutStrategy} to create for each origin pull request.
-     */
+    /** Set of {@link ChangeRequestCheckoutStrategy} to create for each origin pull request. */
     @NonNull
     private Set<ChangeRequestCheckoutStrategy> originPRStrategies = EnumSet.noneOf(ChangeRequestCheckoutStrategy.class);
-    /**
-     * Set of {@link ChangeRequestCheckoutStrategy} to create for each fork pull request.
-     */
+    /** Set of {@link ChangeRequestCheckoutStrategy} to create for each fork pull request. */
     @NonNull
     private Set<ChangeRequestCheckoutStrategy> forkPRStrategies = EnumSet.noneOf(ChangeRequestCheckoutStrategy.class);
-    /**
-     * {@code true} if notifications should be disabled in this context.
-     */
+    /** {@code true} if notifications should be disabled in this context. */
     private boolean notificationsDisabled;
     /**
      * Strategies used to notify Github of build status.
@@ -94,9 +83,11 @@ public class GitHubSCMSourceContext
     }
 
     /**
-     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about branches.
+     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about
+     * branches.
      *
-     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about branches.
+     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about
+     *     branches.
      */
     public final boolean wantBranches() {
         return wantBranches;
@@ -112,37 +103,44 @@ public class GitHubSCMSourceContext
     }
 
     /**
-     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about pull requests.
+     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about pull
+     * requests.
      *
-     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about pull requests.
+     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about pull
+     *     requests.
      */
     public final boolean wantPRs() {
         return wantOriginPRs || wantForkPRs;
     }
 
     /**
-     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about origin pull requests.
+     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about origin
+     * pull requests.
      *
-     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about origin pull requests.
+     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about origin
+     *     pull requests.
      */
     public final boolean wantOriginPRs() {
         return wantOriginPRs;
     }
 
     /**
-     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about fork pull requests.
+     * Returns {@code true} if the {@link GitHubSCMSourceRequest} will need information about fork
+     * pull requests.
      *
-     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about fork pull requests.
+     * @return {@code true} if the {@link GitHubSCMSourceRequest} will need information about fork
+     *     pull requests.
      */
     public final boolean wantForkPRs() {
         return wantForkPRs;
     }
 
-
     /**
-     * Returns the set of {@link ChangeRequestCheckoutStrategy} to create for each origin pull request.
+     * Returns the set of {@link ChangeRequestCheckoutStrategy} to create for each origin pull
+     * request.
      *
-     * @return the set of {@link ChangeRequestCheckoutStrategy} to create for each origin pull request.
+     * @return the set of {@link ChangeRequestCheckoutStrategy} to create for each origin pull
+     *     request.
      */
     @NonNull
     public final Set<ChangeRequestCheckoutStrategy> originPRStrategies() {
@@ -160,6 +158,7 @@ public class GitHubSCMSourceContext
     }
     /**
      * Returns the strategies used to notify Github of build status.
+     *
      * @return the strategies used to notify Github of build status.
      * @since 2.3.2
      */
@@ -181,8 +180,8 @@ public class GitHubSCMSourceContext
     /**
      * Adds a requirement for branch details to any {@link GitHubSCMSourceRequest} for this context.
      *
-     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as is (makes
-     *                simpler with method chaining)
+     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as
+     *     is (makes simpler with method chaining)
      * @return {@code this} for method chaining.
      */
     @NonNull
@@ -194,8 +193,8 @@ public class GitHubSCMSourceContext
     /**
      * Adds a requirement for tag details to any {@link GitHubSCMSourceRequest} for this context.
      *
-     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as is (makes
-     *                simpler with method chaining)
+     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as
+     *     is (makes simpler with method chaining)
      * @return {@code this} for method chaining.
      */
     @NonNull
@@ -205,10 +204,11 @@ public class GitHubSCMSourceContext
     }
 
     /**
-     * Adds a requirement for origin pull request details to any {@link GitHubSCMSourceRequest} for this context.
+     * Adds a requirement for origin pull request details to any {@link GitHubSCMSourceRequest} for
+     * this context.
      *
-     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as is (makes
-     *                simpler with method chaining)
+     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as
+     *     is (makes simpler with method chaining)
      * @return {@code this} for method chaining.
      */
     @NonNull
@@ -218,10 +218,11 @@ public class GitHubSCMSourceContext
     }
 
     /**
-     * Adds a requirement for fork pull request details to any {@link GitHubSCMSourceRequest} for this context.
+     * Adds a requirement for fork pull request details to any {@link GitHubSCMSourceRequest} for this
+     * context.
      *
-     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as is (makes
-     *                simpler with method chaining)
+     * @param include {@code true} to add the requirement or {@code false} to leave the requirement as
+     *     is (makes simpler with method chaining)
      * @return {@code this} for method chaining.
      */
     @NonNull
@@ -231,7 +232,8 @@ public class GitHubSCMSourceContext
     }
 
     /**
-     * Defines the {@link ChangeRequestCheckoutStrategy} instances to create for each origin pull request.
+     * Defines the {@link ChangeRequestCheckoutStrategy} instances to create for each origin pull
+     * request.
      *
      * @param strategies the strategies.
      * @return {@code this} for method chaining.
@@ -243,7 +245,8 @@ public class GitHubSCMSourceContext
     }
 
     /**
-     * Defines the {@link ChangeRequestCheckoutStrategy} instances to create for each fork pull request.
+     * Defines the {@link ChangeRequestCheckoutStrategy} instances to create for each fork pull
+     * request.
      *
      * @param strategies the strategies.
      * @return {@code this} for method chaining.
@@ -261,7 +264,8 @@ public class GitHubSCMSourceContext
      * @since 2.3.2
      */
     @NonNull
-    public final GitHubSCMSourceContext withNotificationStrategies(List<AbstractGitHubNotificationStrategy> strategies) {
+    public final GitHubSCMSourceContext withNotificationStrategies(
+            List<AbstractGitHubNotificationStrategy> strategies) {
         notificationStrategies.clear();
         for (AbstractGitHubNotificationStrategy strategy : strategies) {
             if (!notificationStrategies.contains(strategy)) {
@@ -273,6 +277,7 @@ public class GitHubSCMSourceContext
 
     /**
      * Add a strategy used to notify Github of build status.
+     *
      * @param strategy a strategy used to notify Github of build status.
      * @return {@code this} for method chaining.
      * @since 2.3.2
@@ -297,9 +302,7 @@ public class GitHubSCMSourceContext
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public GitHubSCMSourceRequest newRequest(@NonNull SCMSource source, @CheckForNull TaskListener listener) {

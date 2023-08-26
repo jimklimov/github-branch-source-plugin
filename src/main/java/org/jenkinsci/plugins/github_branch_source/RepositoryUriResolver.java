@@ -29,16 +29,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-/**
- * Resolves the URI of a GitHub repository from the API URI, owner and repository name.
- */
+/** Resolves the URI of a GitHub repository from the API URI, owner and repository name. */
 public abstract class RepositoryUriResolver {
 
     /**
      * Resolves the URI of a repository.
      *
-     * @param apiUri     the API URL of the GitHub server.
-     * @param owner      the owner of the repository.
+     * @param apiUri the API URL of the GitHub server.
+     * @param owner the owner of the repository.
      * @param repository the name of the repository.
      * @return the GIT URL of the repository.
      */

@@ -40,15 +40,11 @@ import org.kohsuke.stapler.Stapler;
  * @author Kohsuke Kawaguchi
  */
 public class GitHubLink implements Action, IconSpec {
-    /**
-     * The icon class name to use.
-     */
+    /** The icon class name to use. */
     @NonNull
     private final String iconClassName;
 
-    /**
-     * Target of the hyperlink to take the user to.
-     */
+    /** Target of the hyperlink to take the user to. */
     @NonNull
     private final String url;
 
@@ -121,10 +117,6 @@ public class GitHubLink implements Action, IconSpec {
 
     @Override
     public String toString() {
-        return "GitHubLink{" +
-                "iconClassName='" + iconClassName + '\'' +
-                ", url='" + url + '\'' +
-                '}';
+        return "GitHubLink{" + "iconClassName='" + iconClassName + '\'' + ", url='" + url + '\'' + '}';
     }
-
 }

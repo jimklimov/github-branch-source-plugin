@@ -34,6 +34,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.SCMHeadOrigin;
@@ -54,94 +55,69 @@ import org.kohsuke.github.GitHub;
  * @since 2.2.0
  */
 public class GitHubSCMSourceRequest extends SCMSourceRequest {
-    /**
-     * {@code true} if branch details need to be fetched.
-     */
+    /** {@code true} if branch details need to be fetched. */
     private final boolean fetchBranches;
-    /**
-     * {@code true} if tag details need to be fetched.
-     */
+    /** {@code true} if tag details need to be fetched. */
     private final boolean fetchTags;
-    /**
-     * {@code true} if origin pull requests need to be fetched.
-     */
+    /** {@code true} if origin pull requests need to be fetched. */
     private final boolean fetchOriginPRs;
-    /**
-     * {@code true} if fork pull requests need to be fetched.
-     */
+    /** {@code true} if fork pull requests need to be fetched. */
     private final boolean fetchForkPRs;
-    /**
-     * The {@link ChangeRequestCheckoutStrategy} to create for each origin pull request.
-     */
+    /** The {@link ChangeRequestCheckoutStrategy} to create for each origin pull request. */
     @NonNull
     private final Set<ChangeRequestCheckoutStrategy> originPRStrategies;
-    /**
-     * The {@link ChangeRequestCheckoutStrategy} to create for each fork pull request.
-     */
+    /** The {@link ChangeRequestCheckoutStrategy} to create for each fork pull request. */
     @NonNull
     private final Set<ChangeRequestCheckoutStrategy> forkPRStrategies;
     /**
-     * The set of pull request numbers that the request is scoped to or {@code null} if the request is not limited.
+     * The set of pull request numbers that the request is scoped to or {@code null} if the request is
+     * not limited.
      */
     @CheckForNull
     private final Set<Integer> requestedPullRequestNumbers;
     /**
-     * The set of origin branch names that the request is scoped to or {@code null} if the request is not limited.
+     * The set of origin branch names that the request is scoped to or {@code null} if the request is
+     * not limited.
      */
     @CheckForNull
     private final Set<String> requestedOriginBranchNames;
     /**
-     * The set of tag names that the request is scoped to or {@code null} if the request is not limited.
+     * The set of tag names that the request is scoped to or {@code null} if the request is not
+     * limited.
      */
     @CheckForNull
     private final Set<String> requestedTagNames;
-    /**
-     * The pull request details or {@code null} if not {@link #isFetchPRs()}.
-     */
+    /** The pull request details or {@code null} if not {@link #isFetchPRs()}. */
     @CheckForNull
     private Iterable<GHPullRequest> pullRequests;
-    /**
-     * The branch details or {@code null} if not {@link #isFetchBranches()}.
-     */
+    /** The branch details or {@code null} if not {@link #isFetchBranches()}. */
     @CheckForNull
     private Iterable<GHBranch> branches;
-    /**
-     * The tag details or {@code null} if not {@link #isFetchTags()}.
-     */
+    /** The tag details or {@code null} if not {@link #isFetchTags()}. */
     @CheckForNull
     private Iterable<GHRef> tags;
-    /**
-     * The repository collaborator names or {@code null} if not provided.
-     */
+    /** The repository collaborator names or {@code null} if not provided. */
     @CheckForNull
     private Set<String> collaboratorNames;
-    /**
-     * A connection to the GitHub API or {@code null} if none established yet.
-     */
+    /** A connection to the GitHub API or {@code null} if none established yet. */
     @CheckForNull
     private GitHub gitHub;
-    /**
-     * The repository.
-     */
+    /** The repository. */
     @CheckForNull
     private GHRepository repository;
-    /**
-     * The resolved permissions keyed by user.
-     */
+    /** The resolved permissions keyed by user. */
     @NonNull
     @GuardedBy("self")
     private final Map<String, GHPermissionType> permissions = new HashMap<>();
-    /**
-     * A deferred lookup of the permissions.
-     */
+    /** A deferred lookup of the permissions. */
     @CheckForNull
     private GitHubPermissionsSource permissionsSource;
 
     /**
      * Constructor.
      *
-     * @param source   the source.
-     * @param context  the context.
+     * @param source the source.
+     * @param context the context.
      * @param listener the listener.
      */
     GitHubSCMSourceRequest(SCMSource source, GitHubSCMSourceContext context, TaskListener listener) {
@@ -249,9 +225,11 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     }
 
     /**
-     * Returns the {@link ChangeRequestCheckoutStrategy} to create for pull requests of the specified type.
+     * Returns the {@link ChangeRequestCheckoutStrategy} to create for pull requests of the specified
+     * type.
      *
-     * @param fork {@code true} to return strategies for the fork pull requests, {@code false} for origin pull requests.
+     * @param fork {@code true} to return strategies for the fork pull requests, {@code false} for
+     *     origin pull requests.
      * @return the {@link ChangeRequestCheckoutStrategy} to create for each pull request.
      */
     @NonNull
@@ -265,12 +243,13 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     /**
      * Returns the {@link ChangeRequestCheckoutStrategy} to create for each pull request.
      *
-     * @return a map of the {@link ChangeRequestCheckoutStrategy} to create for each pull request keyed by whether the
-     * strategy applies to forks or not ({@link Boolean#FALSE} is the key for origin pull requests)
+     * @return a map of the {@link ChangeRequestCheckoutStrategy} to create for each pull request
+     *     keyed by whether the strategy applies to forks or not ({@link Boolean#FALSE} is the key for
+     *     origin pull requests)
      */
     public final Map<Boolean, Set<ChangeRequestCheckoutStrategy>> getPRStrategies() {
         Map<Boolean, Set<ChangeRequestCheckoutStrategy>> result = new HashMap<>();
-        for (Boolean fork : new Boolean[]{Boolean.TRUE, Boolean.FALSE}) {
+        for (Boolean fork : new Boolean[] {Boolean.TRUE, Boolean.FALSE}) {
             result.put(fork, getPRStrategies(fork));
         }
         return result;
@@ -279,8 +258,8 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     /**
      * Returns requested pull request numbers.
      *
-     * @return the requested pull request numbers or {@code null} if the request was not scoped to a subset of pull
-     * requests.
+     * @return the requested pull request numbers or {@code null} if the request was not scoped to a
+     *     subset of pull requests.
      */
     @CheckForNull
     public final Set<Integer> getRequestedPullRequestNumbers() {
@@ -290,7 +269,8 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     /**
      * Gets requested origin branch names.
      *
-     * @return the requested origin branch names or {@code null} if the request was not scoped to a subset of branches.
+     * @return the requested origin branch names or {@code null} if the request was not scoped to a
+     *     subset of branches.
      */
     @CheckForNull
     public final Set<String> getRequestedOriginBranchNames() {
@@ -300,7 +280,8 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     /**
      * Gets requested tag names.
      *
-     * @return the requested tag names or {@code null} if the request was not scoped to a subset of tags.
+     * @return the requested tag names or {@code null} if the request was not scoped to a subset of
+     *     tags.
      */
     @CheckForNull
     public final Set<String> getRequestedTagNames() {
@@ -317,11 +298,12 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     }
 
     /**
-     * Returns the pull request details or an empty list if either the request did not specify to {@link #isFetchPRs()}
-     * or if the pull request details have not been provided by {@link #setPullRequests(Iterable)} yet.
+     * Returns the pull request details or an empty list if either the request did not specify to
+     * {@link #isFetchPRs()} or if the pull request details have not been provided by {@link
+     * #setPullRequests(Iterable)} yet.
      *
-     * @return the details of pull requests, may be limited by {@link #getRequestedPullRequestNumbers()} or
-     * may be empty if not {@link #isFetchPRs()}
+     * @return the details of pull requests, may be limited by {@link
+     *     #getRequestedPullRequestNumbers()} or may be empty if not {@link #isFetchPRs()}
      */
     @NonNull
     public Iterable<GHPullRequest> getPullRequests() {
@@ -338,8 +320,9 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     }
 
     /**
-     * Returns the branch details or an empty list if either the request did not specify to {@link #isFetchBranches()}
-     * or if the branch details have not been provided by {@link #setBranches(Iterable)} yet.
+     * Returns the branch details or an empty list if either the request did not specify to {@link
+     * #isFetchBranches()} or if the branch details have not been provided by {@link
+     * #setBranches(Iterable)} yet.
      *
      * @return the branch details (may be empty)
      */
@@ -358,8 +341,9 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     }
 
     /**
-     * Returns the branch details or an empty list if either the request did not specify to {@link #isFetchBranches()}
-     * or if the branch details have not been provided by {@link #setBranches(Iterable)} yet.
+     * Returns the branch details or an empty list if either the request did not specify to {@link
+     * #isFetchBranches()} or if the branch details have not been provided by {@link
+     * #setBranches(Iterable)} yet.
      *
      * @return the branch details (may be empty)
      */
@@ -380,31 +364,36 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
     }
 
     /**
-     * Returns the names of the repository collaborators or {@code null} if those details have not been provided yet.
+     * Returns the names of the repository collaborators or {@code null} if those details have not
+     * been provided yet.
      *
-     * @return the names of the repository collaborators or {@code null} if those details have not been provided yet.
+     * @return the names of the repository collaborators or {@code null} if those details have not
+     *     been provided yet.
      */
     public final Set<String> getCollaboratorNames() {
         return collaboratorNames;
     }
 
     /**
-     * Checks the API rate limit and sleeps if over-used until the remaining limit is on-target for expected usage.
+     * Checks the API rate limit and sleeps if over-used until the remaining limit is on-target for
+     * expected usage.
      *
-     * @throws IOException          if the rate limit could not be obtained.
+     * @throws IOException if the rate limit could not be obtained.
      * @throws InterruptedException if interrupted while waiting.
+     * @deprecated rate limit checking is done automatically
      */
+    @Deprecated
     public final void checkApiRateLimit() throws IOException, InterruptedException {
         if (gitHub != null) {
-            Connector.checkApiRateLimit(listener(), gitHub);
+            Connector.configureLocalRateLimitChecker(listener(), Objects.requireNonNull(gitHub));
         }
     }
 
     /**
      * Returns the {@link GitHub} API connector to use for the request.
      *
-     * @return the {@link GitHub} API connector to use for the request or {@code null} if caller should establish
-     * their own.
+     * @return the {@link GitHub} API connector to use for the request or {@code null} if caller
+     *     should establish their own.
      */
     @CheckForNull
     public GitHub getGitHub() {
@@ -438,9 +427,7 @@ public class GitHubSCMSourceRequest extends SCMSourceRequest {
         this.repository = repository;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void close() throws IOException {
         if (pullRequests instanceof Closeable) {

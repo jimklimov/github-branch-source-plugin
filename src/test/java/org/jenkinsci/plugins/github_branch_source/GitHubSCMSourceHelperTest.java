@@ -1,9 +1,9 @@
 package org.jenkinsci.plugins.github_branch_source;
 
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+
+import org.junit.Test;
 
 public class GitHubSCMSourceHelperTest {
 
@@ -22,5 +22,4 @@ public class GitHubSCMSourceHelperTest {
         assertThat(sut.getRepository(), is("jenkins"));
         assertThat(sut.getRepositoryUrl(), is("https://github.com/jenkinsci/jenkins"));
     }
-
 }

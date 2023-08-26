@@ -32,6 +32,7 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.Item;
 import hudson.model.Queue;
 import hudson.plugins.git.GitSCM;
@@ -58,61 +59,48 @@ import org.jenkinsci.plugins.github.config.GitHubServerConfig;
  *
  * @since 2.2.0
  */
+@SuppressFBWarnings("DMI_RANDOM_USED_ONLY_ONCE") // https://github.com/spotbugs/spotbugs/issues/1539
 public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
 
-    /**
-     * Singleton instance of {@link HttpsRepositoryUriResolver}.
-     */
+    private static final Random ENTROPY = new Random();
+    /** Singleton instance of {@link HttpsRepositoryUriResolver}. */
     static final HttpsRepositoryUriResolver HTTPS = new HttpsRepositoryUriResolver();
-    /**
-     * Singleton instance of {@link SshRepositoryUriResolver}.
-     */
+    /** Singleton instance of {@link SshRepositoryUriResolver}. */
     static final SshRepositoryUriResolver SSH = new SshRepositoryUriResolver();
-    /**
-     * The GitHub API suffix for GitHub Server.
-     */
+    /** The GitHub API suffix for GitHub Server. */
     static final String API_V3 = "api/v3";
-    /**
-     * The context within which credentials should be resolved.
-     */
+    /** The context within which credentials should be resolved. */
     @CheckForNull
     private final SCMSourceOwner context;
-    /**
-     * The API URL
-     */
+    /** The API URL */
     @NonNull
     private final String apiUri;
-    /**
-     * The repository owner.
-     */
+    /** The repository owner. */
     @NonNull
     private final String repoOwner;
-    /**
-     * The repository name.
-     */
+    /** The repository name. */
     @NonNull
     private final String repository;
     /**
-     * The definitive HTML user-facing URL of the repository (as provided by the GitHub API) if available.
+     * The definitive HTML user-facing URL of the repository (as provided by the GitHub API) if
+     * available.
      */
     @CheckForNull
     private final URL repositoryUrl;
-    /**
-     * The repository name.
-     */
+    /** The repository name. */
     @NonNull
     private RepositoryUriResolver uriResolver = GitHubSCMBuilder.HTTPS;
 
     /**
      * Constructor.
      *
-     * @param source   the {@link GitHubSCMSource}.
-     * @param head     the {@link SCMHead}
+     * @param source the {@link GitHubSCMSource}.
+     * @param head the {@link SCMHead}
      * @param revision the (optional) {@link SCMRevision}
      */
-    public GitHubSCMBuilder(@NonNull GitHubSCMSource source,
-                            @NonNull SCMHead head, @CheckForNull SCMRevision revision) {
-        super(head, revision, /*dummy value*/guessRemote(source), source.getCredentialsId());
+    public GitHubSCMBuilder(
+            @NonNull GitHubSCMSource source, @NonNull SCMHead head, @CheckForNull SCMRevision revision) {
+        super(head, revision, /*dummy value*/ guessRemote(source), source.getCredentialsId());
         this.context = source.getOwner();
         apiUri = StringUtils.defaultIfBlank(source.getApiUri(), GitHubServerConfig.GITHUB_URL);
         repoOwner = source.getRepoOwner();
@@ -123,8 +111,7 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
         String repoUrl;
         if (head instanceof PullRequestSCMHead) {
             PullRequestSCMHead h = (PullRequestSCMHead) head;
-            withRefSpec("+refs/pull/" + h.getId() + "/head:refs/remotes/@{remote}/" + head
-                    .getName());
+            withRefSpec("+refs/pull/" + h.getId() + "/head:refs/remotes/@{remote}/" + head.getName());
             repoUrl = repositoryUrl(h.getSourceOwner(), h.getSourceRepo());
         } else if (head instanceof TagSCMHead) {
             withRefSpec("+refs/tags/" + head.getName() + ":refs/tags/" + head.getName());
@@ -151,7 +138,7 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
         if (StringUtils.isBlank(apiUri) || GitHubServerConfig.GITHUB_URL.equals(apiUri)) {
             apiUri = "https://github.com";
         } else {
-            apiUri = StringUtils.removeEnd(apiUri, "/"+API_V3);
+            apiUri = StringUtils.removeEnd(apiUri, "/" + API_V3);
         }
         return apiUri + "/" + source.getRepoOwner() + "/" + source.getRepository() + ".git";
     }
@@ -160,7 +147,7 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
      * Tries as best as possible to guess the repository HTML url to use with {@link GithubWeb}.
      *
      * @param owner the owner.
-     * @param repo  the repository.
+     * @param repo the repository.
      * @return the HTML url of the repository or {@code null} if we could not determine the answer.
      */
     @CheckForNull
@@ -175,7 +162,7 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
         if (StringUtils.isBlank(apiUri) || GitHubServerConfig.GITHUB_URL.equals(apiUri)) {
             return "https://github.com/" + owner + "/" + repo;
         }
-        if (StringUtils.endsWith(StringUtils.removeEnd(apiUri, "/"), "/"+API_V3)) {
+        if (StringUtils.endsWith(StringUtils.removeEnd(apiUri, "/"), "/" + API_V3)) {
             return StringUtils.removeEnd(StringUtils.removeEnd(apiUri, "/"), API_V3) + owner + "/" + repo;
         }
         return null;
@@ -192,15 +179,15 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
     }
 
     /**
-     * Configures the {@link IdCredentials#getId()} of the {@link Credentials} to use when connecting to the
-     * {@link #remote()}
+     * Configures the {@link IdCredentials#getId()} of the {@link Credentials} to use when connecting
+     * to the {@link #remote()}
      *
-     * @param credentialsId the {@link IdCredentials#getId()} of the {@link Credentials} to use when connecting to
-     *                      the {@link #remote()} or {@code null} to let the git client choose between providing its own
-     *                      credentials or connecting anonymously.
-     * @param uriResolver the {@link RepositoryUriResolver} of the {@link Credentials} to use or {@code null}
-     *                 to detect the the protocol based on the credentialsId. Defaults to HTTP if credentials are
-     *                 {@code null}.  Enables support for blank SSH credentials.
+     * @param credentialsId the {@link IdCredentials#getId()} of the {@link Credentials} to use when
+     *     connecting to the {@link #remote()} or {@code null} to let the git client choose between
+     *     providing its own credentials or connecting anonymously.
+     * @param uriResolver the {@link RepositoryUriResolver} of the {@link Credentials} to use or
+     *     {@code null} to detect the the protocol based on the credentialsId. Defaults to HTTP if
+     *     credentials are {@code null}. Enables support for blank SSH credentials.
      * @return {@code this} for method chaining.
      */
     @NonNull
@@ -216,14 +203,14 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
     /**
      * Returns a {@link RepositoryUriResolver} according to credentials configuration.
      *
-     * @param context       the context within which to resolve the credentials.
-     * @param apiUri        the API url
+     * @param context the context within which to resolve the credentials.
+     * @param apiUri the API url
      * @param credentialsId the credentials.
      * @return a {@link RepositoryUriResolver}
      */
     @NonNull
-    public static RepositoryUriResolver uriResolver(@CheckForNull Item context, @NonNull String apiUri,
-                                                    @CheckForNull String credentialsId) {
+    public static RepositoryUriResolver uriResolver(
+            @CheckForNull Item context, @NonNull String apiUri, @CheckForNull String credentialsId) {
         if (credentialsId == null) {
             return HTTPS;
         } else {
@@ -236,13 +223,10 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
                                     : ACL.SYSTEM,
                             URIRequirementBuilder.create()
                                     .withHostname(RepositoryUriResolver.hostnameFromApiUri(apiUri))
-                                    .build()
-                    ),
+                                    .build()),
                     CredentialsMatchers.allOf(
                             CredentialsMatchers.withId(credentialsId),
-                            CredentialsMatchers.instanceOf(StandardCredentials.class)
-                    )
-            );
+                            CredentialsMatchers.instanceOf(StandardCredentials.class)));
             if (credentials instanceof SSHUserPrivateKey) {
                 return SSH;
             } else {
@@ -255,8 +239,9 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
     /**
      * Updates the {@link GitSCMBuilder#withRemote(String)} based on the current {@link #head()} and
      * {@link #revision()}.
-     * Will be called automatically by {@link #build()} but exposed in case the correct remote is required after
-     * changing the {@link #withCredentials(String)}.
+     *
+     * <p>Will be called automatically by {@link #build()} but exposed in case the correct remote is
+     * required after changing the {@link #withCredentials(String)}.
      *
      * @return {@code this} for method chaining.
      */
@@ -277,9 +262,7 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public GitSCM build() {
@@ -300,8 +283,7 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
                     String targetDst = Constants.R_REMOTES + remoteName() + "/" + name;
                     for (RefSpec b : asRefSpecs()) {
                         String dst = b.getDestination();
-                        assert dst.startsWith(Constants.R_REFS)
-                                : "All git references must start with refs/";
+                        assert dst.startsWith(Constants.R_REFS) : "All git references must start with refs/";
                         if (targetSrc.equals(b.getSource())) {
                             if (targetDst.equals(dst)) {
                                 match = true;
@@ -324,16 +306,21 @@ public class GitHubSCMBuilder extends GitSCMBuilder<GitHubSCMBuilder> {
                             localName = "remotes/" + remoteName() + "/pr-" + head.getNumber() + "-upstream-" + name;
                         }
                         if (localNames.contains(localName)) {
-                            // ok we're just going to mangle our way to something that works
-                            Random entropy = new Random();
                             while (localNames.contains(localName)) {
-                                localName = "remotes/" + remoteName() + "/pr-" + head.getNumber() + "-upstream-" + name
-                                        + "-" + Integer.toHexString(entropy.nextInt(Integer.MAX_VALUE));
+                                localName = "remotes/"
+                                        + remoteName()
+                                        + "/pr-"
+                                        + head.getNumber()
+                                        + "-upstream-"
+                                        + name
+                                        + "-"
+                                        + Integer.toHexString(ENTROPY.nextInt(Integer.MAX_VALUE));
                             }
                         }
                         withRefSpec("+refs/heads/" + name + ":refs/" + localName);
                     }
-                    withExtension(new MergeWithGitSCMExtension(localName,
+                    withExtension(new MergeWithGitSCMExtension(
+                            localName,
                             r instanceof PullRequestSCMRevision ? ((PullRequestSCMRevision) r).getBaseHash() : null));
                 }
                 if (r instanceof PullRequestSCMRevision) {

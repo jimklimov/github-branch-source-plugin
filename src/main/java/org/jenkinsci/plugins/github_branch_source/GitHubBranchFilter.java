@@ -39,19 +39,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @since 2.0.0
  */
 public class GitHubBranchFilter extends ViewJobFilter {
-    /**
-     * Our constructor.
-     */
+    /** Our constructor. */
     @DataBoundConstructor
-    public GitHubBranchFilter() {
-    }
+    public GitHubBranchFilter() {}
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public List<TopLevelItem> filter(List<TopLevelItem> added, List<TopLevelItem> all, View filteringView) {
-        for (TopLevelItem item:all) {
+        for (TopLevelItem item : all) {
             if (added.contains(item)) {
                 continue;
             }
@@ -62,19 +57,14 @@ public class GitHubBranchFilter extends ViewJobFilter {
         return added;
     }
 
-    /**
-     * Our descriptor.
-     */
+    /** Our descriptor. */
     @Extension(optional = true)
     public static class DescriptorImpl extends Descriptor<ViewJobFilter> {
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public String getDisplayName() {
             return Messages.GitHubBranchFilter_DisplayName();
         }
     }
-
 }

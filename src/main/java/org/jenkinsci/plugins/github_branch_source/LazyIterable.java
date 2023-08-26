@@ -34,9 +34,7 @@ import java.util.Iterator;
  * @since 2.2.0
  */
 abstract class LazyIterable<V> implements Iterable<V> {
-    /**
-     * The delegate.
-     */
+    /** The delegate. */
     @CheckForNull
     private Iterable<V> delegate;
 
@@ -48,9 +46,7 @@ abstract class LazyIterable<V> implements Iterable<V> {
     @NonNull
     protected abstract Iterable<V> create();
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public synchronized Iterator<V> iterator() {
         if (delegate == null) {
